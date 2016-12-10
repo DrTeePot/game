@@ -17,8 +17,8 @@ func Render(model model.RawModel) {
 
 	gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 0, nil)
 
-	// gl.DrawElements(gl.TRIANGLES, model.VertexCount(), gl.UNSIGNED_INT, nil)
-	gl.DrawArrays(gl.TRIANGLES, 0, model.VertexCount())
+	gl.DrawElements(gl.TRIANGLES, model.VertexCount(),
+		gl.UNSIGNED_INT, nil)
 
 	gl.DisableVertexAttribArray(0)
 }

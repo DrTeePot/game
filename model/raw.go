@@ -1,16 +1,19 @@
 package model
 
 type RawModel struct {
-	vaoID       uint32
+	indices     uint32
+	vboID       uint32
 	vertexCount int32
 }
 
-func NewRawModel(id uint32, vCount int) RawModel {
+func NewRawModel(bufferID uint32, indices uint32, vCount int) RawModel {
 	return RawModel{
-		vaoID:       id,
+		vboID:       bufferID,
+		indices:     indices,
 		vertexCount: int32(vCount),
 	}
 }
 
-func (r RawModel) VAOID() uint32      { return r.vaoID }
+func (r RawModel) BufferID() uint32   { return r.vboID }
+func (r RawModel) Indices() uint32    { return r.indices }
 func (r RawModel) VertexCount() int32 { return r.vertexCount }

@@ -46,14 +46,3 @@ func LoadToModel(vertecies []float32, indices []uint32) model.RawModel {
 
 	return model.NewRawModel(vertexBuffer, indicesBufferID, len(vertecies))
 }
-
-func bindIndicesBuffer(indices []uint32) uint32 {
-	var vboID uint32
-	gl.GenBuffers(2, &vboID)
-	vbos = append(vbos, vboID)
-	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, vboID)
-	gl.BufferData(gl.ELEMENT_ARRAY_BUFFER,
-		len(indices)*4, // float32 is 4 bytes
-		gl.Ptr(indices), gl.STATIC_DRAW)
-	return vboID
-}
