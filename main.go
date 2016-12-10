@@ -7,6 +7,7 @@ import (
 
 	"github.com/DrTeePot/game/loader"
 	"github.com/DrTeePot/game/render"
+	"github.com/DrTeePot/game/shaders"
 
 	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/glfw/v3.2/glfw"
@@ -31,13 +32,12 @@ func main() {
 	defer glfw.Terminate()
 
 	// TODO manage all this in a display thing
-	glfw.WindowHint(glfw.Resizable, glfw.False)
+	glfw.WindowHint(glfw.Resizable, glfw.True)
 	glfw.WindowHint(glfw.ContextVersionMajor, 4)
 	glfw.WindowHint(glfw.ContextVersionMinor, 1)
 	glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
 	glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
 	window, err := glfw.CreateWindow(windowWidth, windowHeight, "GAME", nil, nil)
-	//	gl.Viewport(0, 0, windowWidth, windowHeight)
 	if err != nil {
 		panic(err)
 	}
@@ -51,24 +51,47 @@ func main() {
 	version := gl.GoStr(gl.GetString(gl.VERSION))
 	fmt.Println("OpenGL version", version)
 
-	// REAL STUFFS
-	vertecies := []float32{
-		-0.5, 0.5, 0,
-		-0.5, -0.5, 0,
-		0.5, -0.5, 0,
-		0.5, -0.5, 0,
-		0.5, 0.5, 0,
-		-0.5, 0.5, 0,
+	vertexShader := "shaders/vertexShader.glsl"
+	fragmentShader := "shaders/fragmentShader.glsl"
+
+	shader, err := shaders.NewShaderProgram(vertexShader, fragmentShader)
+	if err != nil {
+		panic(err)
 	}
 
-	model := loader.LoadToVAO(vertecies)
+	// REAL STUFFS
+	vertecies := []float32{
+		-0.5, 0.5, 1,
+		-0.5, -0.5, 1,
+		0.5, -0.5, 1,
+		0.5, -0.5, 1,
+		0.5, 0.5, 1,
+		-0.5, 0.5, 1,
+	}
+
+	indices := []uint32{
+		1, 1, 3,
+		3, 1, 2,
+	}
+
+	model := loader.LoadToModel(vertecies, indices)
+
+	// Configure global settings
+	gl.DepthFunc(gl.LESS)
+
+	gl.ClearColor(0.11, 0.545, 0.765, 0.0)
 
 	for !window.ShouldClose() {
 		render.Prepare()
+		shader.Start()
 		render.Render(model)
+		shader.Stop()
 
 		// Maintenance
 		window.SwapBuffers()
 		glfw.PollEvents()
 	}
+
+	shader.CleanUp()
+	loader.CleanUp()
 }

@@ -14,13 +14,6 @@ func init() {
 	vbos = make([]uint32, 10)
 }
 
-func LoadToVAO(positions []float32) model.RawModel {
-	vaoID := createVAO()
-	storeDataInAttributeList(0, positions)
-	unbindVAO()
-	return model.NewRawModel(vaoID, len(positions)/3)
-}
-
 func CleanUp() {
 	// needs the length and a pointer to the first element
 	// c bindings are a pain
@@ -28,27 +21,39 @@ func CleanUp() {
 	gl.DeleteBuffers(int32(len(vbos)), &vbos[0])
 }
 
-func createVAO() uint32 {
-	var vaoID uint32
-	gl.GenVertexArrays(1, &vaoID)
-	vaos = append(vaos, vaoID)
-	gl.BindVertexArray(vaoID)
-	return vaoID
+func LoadToModel(vertecies []float32, indices []uint32) model.RawModel {
+	// Create Vertex array object
+	var vertexArrayID uint32
+	gl.GenVertexArrays(1, &vertexArrayID)
+	gl.BindVertexArray(vertexArrayID)
+
+	var vertexBuffer uint32
+	gl.GenBuffers(1, &vertexBuffer)
+	gl.BindBuffer(gl.ARRAY_BUFFER, vertexBuffer)
+	gl.BufferData(gl.ARRAY_BUFFER, len(vertecies)*4, gl.Ptr(vertecies), gl.STATIC_DRAW)
+
+	var indicesBufferID uint32
+	gl.GenBuffers(1, &indicesBufferID)
+	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, indicesBufferID)
+	gl.BufferData(gl.ELEMENT_ARRAY_BUFFER,
+		len(indices)*4, // uint32 is 4 bytes
+		gl.Ptr(indices), gl.STATIC_DRAW)
+
+	// allows for cleanup
+	vaos = append(vaos, vertexArrayID)
+	vbos = append(vbos, vertexBuffer)
+	vbos = append(vbos, indicesBufferID)
+
+	return model.NewRawModel(vertexBuffer, indicesBufferID, len(vertecies))
 }
 
-func storeDataInAttributeList(attributeNumber uint32, data []float32) {
-	// to use float64 data, use gl.DOUBLE instead of gl.FLOAT below
+func bindIndicesBuffer(indices []uint32) uint32 {
 	var vboID uint32
-	gl.GenBuffers(1, &vboID)
+	gl.GenBuffers(2, &vboID)
 	vbos = append(vbos, vboID)
-	gl.BindBuffer(gl.ARRAY_BUFFER, vboID)
-	// multiply data by 4 because float32 is 4 bytes
-	gl.BufferData(gl.ARRAY_BUFFER, len(data)*4, gl.Ptr(data), gl.STATIC_DRAW)
-	// 3*4 because i have 3 points in a vertex, and each point is 4 bytes
-	gl.VertexAttribPointer(attributeNumber, 3, gl.FLOAT, false, 3*4, gl.PtrOffset(0))
-	gl.BindBuffer(gl.ARRAY_BUFFER, 0)
-}
-
-func unbindVAO() {
-	gl.BindVertexArray(0)
+	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, vboID)
+	gl.BufferData(gl.ELEMENT_ARRAY_BUFFER,
+		len(indices)*4, // float32 is 4 bytes
+		gl.Ptr(indices), gl.STATIC_DRAW)
+	return vboID
 }
