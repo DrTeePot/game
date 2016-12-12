@@ -7,6 +7,7 @@ import (
 
 	"github.com/DrTeePot/game/entity"
 	"github.com/DrTeePot/game/loader"
+	"github.com/DrTeePot/game/maths"
 	"github.com/DrTeePot/game/model"
 	"github.com/DrTeePot/game/render"
 	"github.com/DrTeePot/game/shaders"
@@ -91,6 +92,8 @@ func main() {
 	texture := model.NewTexture(textureID)
 	model := model.NewTexturedModel(rawModel, texture)
 
+	var camera entity.Camera // new 0'd camera
+
 	entity := entity.Entity{
 		Model:    model,
 		Position: mgl32.Vec3{0, 0, 0},
@@ -107,9 +110,18 @@ func main() {
 
 	for !window.ShouldClose() {
 		entity.IncreasePosition(0.0, 0, -0.002)
+		camera.Position[0] += 0.002
+		camera.Move()
 		render.Prepare()
 		shader.Start()
+
+		// move the world
+		// could put this somewhere else?
+		viewMatrix := maths.CreateViewMatrix(camera)
+		shader.LoadViewMatrix(viewMatrix)
+
 		render.Render(entity, shader)
+
 		shader.Stop()
 
 		// Maintenance

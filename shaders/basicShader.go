@@ -8,6 +8,7 @@ type BasicShader interface {
 	Shader
 	LoadTransformationMatrix(math.Mat4)
 	LoadProjectionMatrix(math.Mat4)
+	LoadViewMatrix(math.Mat4)
 }
 
 type basicShader struct {
@@ -16,6 +17,7 @@ type basicShader struct {
 	// uniform variable locations
 	transformationMatrix int32
 	projectionMatrix     int32
+	viewMatrix           int32
 }
 
 // NewBasicShader creates a Shader using the shaders from file specified
@@ -41,11 +43,13 @@ func NewBasicShader(vertexShader, fragmentShader string) (BasicShader, error) {
 	// get shader uniform locations
 	t := program.GetUniformLocation("transformationMatrix")
 	p := program.GetUniformLocation("projectionMatrix")
+	v := program.GetUniformLocation("viewMatrix")
 
 	return basicShader{
 		program:              program,
 		transformationMatrix: t,
 		projectionMatrix:     p,
+		viewMatrix:           v,
 	}, nil
 }
 
@@ -53,10 +57,15 @@ func (s basicShader) Start()  { s.program.Start() }
 func (s basicShader) Stop()   { s.program.Stop() }
 func (s basicShader) Delete() { s.program.Delete() }
 
+// Load to uniform variables
 func (s basicShader) LoadTransformationMatrix(matrix math.Mat4) {
 	s.program.LoadMatrix(s.transformationMatrix, matrix)
 }
 
 func (s basicShader) LoadProjectionMatrix(matrix math.Mat4) {
 	s.program.LoadMatrix(s.projectionMatrix, matrix)
+}
+
+func (s basicShader) LoadViewMatrix(matrix math.Mat4) {
+	s.program.LoadMatrix(s.viewMatrix, matrix)
 }
