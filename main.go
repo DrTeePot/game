@@ -5,12 +5,15 @@ import (
 	"log"
 	"runtime"
 
+	"github.com/DrTeePot/game/entity"
 	"github.com/DrTeePot/game/loader"
+	"github.com/DrTeePot/game/model"
 	"github.com/DrTeePot/game/render"
 	"github.com/DrTeePot/game/shaders"
 
 	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/glfw/v3.2/glfw"
+	"github.com/go-gl/mathgl/mgl32"
 )
 
 const (
@@ -54,10 +57,11 @@ func main() {
 	vertexShader := "shaders/vertexShader.glsl"
 	fragmentShader := "shaders/fragmentShader.glsl"
 
-	shader, err := shaders.NewShaderProgram(vertexShader, fragmentShader)
+	shader, err := shaders.NewBasicShader(vertexShader, fragmentShader)
 	if err != nil {
 		panic(err)
 	}
+	render.Initialize(shader)
 
 	// REAL STUFFS
 	vertecies := []float32{
@@ -72,7 +76,29 @@ func main() {
 		2, 3, 0,
 	}
 
-	model := loader.LoadToModel(vertecies, indices)
+	textureCoords := []float32{
+		0, 0,
+		0, 1,
+		1, 1,
+		1, 0,
+	}
+
+	rawModel := loader.LoadToModel(vertecies, indices, textureCoords)
+	textureID, err := loader.LoadTexture("square.png")
+	if err != nil {
+		panic(err)
+	}
+	texture := model.NewTexture(textureID)
+	model := model.NewTexturedModel(rawModel, texture)
+
+	entity := entity.Entity{
+		Model:    model,
+		Position: mgl32.Vec3{0, 0, 0},
+		RotX:     0,
+		RotY:     0,
+		RotZ:     0,
+		Scale:    1,
+	}
 
 	// Configure global settings
 	gl.DepthFunc(gl.LESS)
@@ -80,9 +106,10 @@ func main() {
 	gl.ClearColor(0.11, 0.545, 0.765, 0.0)
 
 	for !window.ShouldClose() {
+		entity.IncreasePosition(0.0, 0, -0.002)
 		render.Prepare()
 		shader.Start()
-		render.Render(model)
+		render.Render(entity, shader)
 		shader.Stop()
 
 		// Maintenance
@@ -90,6 +117,6 @@ func main() {
 		glfw.PollEvents()
 	}
 
-	shader.CleanUp()
+	shader.Delete()
 	loader.CleanUp()
 }

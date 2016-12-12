@@ -1,19 +1,31 @@
 package model
 
 type RawModel struct {
-	indices     uint32
-	vboID       uint32
+	vao         uint32
 	vertexCount int32
 }
 
-func NewRawModel(bufferID uint32, indices uint32, vCount int) RawModel {
+func NewRawModel(arrayObject uint32, vCount int) RawModel {
 	return RawModel{
-		vboID:       bufferID,
-		indices:     indices,
+		vao:         arrayObject,
 		vertexCount: int32(vCount),
 	}
 }
 
-func (r RawModel) BufferID() uint32   { return r.vboID }
-func (r RawModel) Indices() uint32    { return r.indices }
+func (r RawModel) ID() uint32         { return r.vao }
 func (r RawModel) VertexCount() int32 { return r.vertexCount }
+
+type TexturedModel struct {
+	model   RawModel
+	texture Texture
+}
+
+func NewTexturedModel(model RawModel, texture Texture) TexturedModel {
+	return TexturedModel{
+		model:   model,
+		texture: texture,
+	}
+}
+
+func (t TexturedModel) Texture() Texture   { return t.texture }
+func (t TexturedModel) RawModel() RawModel { return t.model }

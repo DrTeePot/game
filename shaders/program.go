@@ -6,74 +6,79 @@ import (
 	"strings"
 
 	"github.com/go-gl/gl/v4.1-core/gl"
+	math "github.com/go-gl/mathgl/mgl32"
 )
 
-type ShaderBase struct {
+type Shader interface {
+	Start()
+	Stop()
+	Delete()
+}
+
+type program struct {
 	programID        uint32
 	vertexShaderID   uint32
 	fragmentShaderID uint32
 }
 
-func NewShaderProgram(vertexShaderSource, fragmentShaderSource string) (ShaderBase, error) {
+func newShaderProgram(vertexShaderSource, fragmentShaderSource string) (program, error) {
 	vertexShader, err := compileShaderFromFile(vertexShaderSource, gl.VERTEX_SHADER)
 	if err != nil {
-		return ShaderBase{}, err
+		return program{}, err
 	}
 
 	fragmentShader, err := compileShaderFromFile(fragmentShaderSource, gl.FRAGMENT_SHADER)
 	if err != nil {
-		return ShaderBase{}, err
+		return program{}, err
 	}
 
-	program := gl.CreateProgram()
+	programID := gl.CreateProgram()
 
-	shader := ShaderBase{
-		programID:        program,
+	return program{
+		programID:        programID,
 		vertexShaderID:   vertexShader,
 		fragmentShaderID: fragmentShader,
-	}
+	}, nil
+}
 
-	// this should be in the specific shader created
-	// shader.bindAttribute(0, "position")
-
-	gl.AttachShader(program, vertexShader)
-	gl.AttachShader(program, fragmentShader)
-	gl.LinkProgram(program)
+func (s program) LinkProgram() error {
+	gl.AttachShader(s.programID, s.vertexShaderID)
+	gl.AttachShader(s.programID, s.fragmentShaderID)
+	gl.LinkProgram(s.programID)
 
 	var status int32
-	gl.GetProgramiv(program, gl.LINK_STATUS, &status)
+	gl.GetProgramiv(s.programID, gl.LINK_STATUS, &status)
 	if status == gl.FALSE {
 		var logLength int32
-		gl.GetProgramiv(program, gl.INFO_LOG_LENGTH, &logLength)
+		gl.GetProgramiv(s.programID, gl.INFO_LOG_LENGTH, &logLength)
 
 		log := strings.Repeat("\x00", int(logLength+1))
-		gl.GetProgramInfoLog(program, logLength, nil, gl.Str(log))
+		gl.GetProgramInfoLog(s.programID, logLength, nil, gl.Str(log))
 
-		return ShaderBase{}, fmt.Errorf("failed to link program: %v", log)
+		return fmt.Errorf("failed to link program: %v", log)
 	}
 
 	// Detach shaders
-	gl.DetachShader(program, vertexShader)
-	gl.DetachShader(program, fragmentShader)
+	gl.DetachShader(s.programID, s.vertexShaderID)
+	gl.DetachShader(s.programID, s.fragmentShaderID)
 
 	// delete the shaders
-	gl.DeleteShader(vertexShader)
-	gl.DeleteShader(fragmentShader)
+	gl.DeleteShader(s.vertexShaderID)
+	gl.DeleteShader(s.fragmentShaderID)
 
-	// thinMatrix calls "bindAttributes" here, an anonymous class that does something
-
-	return shader, nil
+	// woot woot no errors
+	return nil
 }
 
-func (s ShaderBase) Start() {
+func (s program) Start() {
 	gl.UseProgram(s.programID)
 }
 
-func (s ShaderBase) Stop() {
+func (s program) Stop() {
 	gl.UseProgram(0)
 }
 
-func (s ShaderBase) CleanUp() {
+func (s program) Delete() {
 	s.Stop()
 	// since we slated the shaders for deletion when we attached
 	//  them to the program, this will delete them.
@@ -82,13 +87,43 @@ func (s ShaderBase) CleanUp() {
 	gl.DeleteProgram(s.programID)
 }
 
-func (s ShaderBase) bindAttribute(attribute uint32, variableName string) {
+func (p program) GetUniformLocation(uniformName string) int32 {
+	variableChar := &[]uint8(uniformName)[0]
+
+	return gl.GetUniformLocation(p.programID, variableChar)
+}
+
+func (p program) LoadFloat(location int32, value float32) {
+	gl.Uniform1f(location, value)
+}
+
+func (p program) LoadVector(location int32, vector math.Vec3) {
+	gl.Uniform3f(location, vector.X(), vector.Y(), vector.Z())
+}
+
+func (p program) LoadBoolean(location int32, value bool) {
+	// go initializes to 0
+	var toLoad float32
+	if value {
+		toLoad = 1
+	}
+	gl.Uniform1f(location, toLoad)
+}
+
+func (p program) LoadMatrix(location int32, matrix math.Mat4) {
+	// the second parameter is the number of matrices being passed
+	// we convert matrix to a *float32
+	gl.UniformMatrix4fv(location, 1, false, &matrix[0])
+}
+
+func (s program) BindAttribute(attribute uint32, variableName string) {
 	// variable name needs to be a *uint8
 	variableChar := &[]uint8(variableName)[0]
 
 	gl.BindAttribLocation(s.programID, attribute, variableChar)
 }
 
+// compileShaderFromFile takes a filename and a shader type and returns a shader
 func compileShaderFromFile(filename string, shaderType uint32) (uint32, error) {
 	shaderSource, err := ioutil.ReadFile(filename)
 	if err != nil {
