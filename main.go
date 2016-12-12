@@ -108,10 +108,23 @@ func main() {
 
 	gl.ClearColor(0.11, 0.545, 0.765, 0.0)
 
+	// this is disgusting. TODO make a keyboard package
+	_ = window.SetKeyCallback(
+		func(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
+			if key == glfw.KeyW && action == glfw.Press {
+				camera.Position = camera.Position.Sub(mgl32.Vec3{0, 0, 0.02})
+			}
+			if key == glfw.KeyD && action == glfw.Press {
+				camera.Position = camera.Position.Add(mgl32.Vec3{0.02, 0, 0})
+			}
+			if key == glfw.KeyA && action == glfw.Press {
+				camera.Position = camera.Position.Sub(mgl32.Vec3{0.02, 0, 0})
+			}
+		})
+
 	for !window.ShouldClose() {
 		entity.IncreasePosition(0.0, 0, -0.002)
 		camera.Position[0] += 0.002
-		camera.Move()
 		render.Prepare()
 		shader.Start()
 
