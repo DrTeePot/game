@@ -64,28 +64,12 @@ func main() {
 	}
 	render.Initialize(shader)
 
-	// REAL STUFFS
-	vertecies := []float32{
-		-0.5, 0.5, 0, // 0
-		-0.5, -0.5, 0, // 1
-		0.5, -0.5, 0, // 2
-		0.5, 0.5, 0, // 3
+	rawModel, err := loader.LoadObjModel("assets/stall.obj")
+	if err != nil {
+		fmt.Println("problem loading model")
+		panic(err)
 	}
-
-	indices := []uint32{
-		0, 1, 2,
-		2, 3, 0,
-	}
-
-	textureCoords := []float32{
-		0, 0,
-		0, 1,
-		1, 1,
-		1, 0,
-	}
-
-	rawModel := loader.LoadToModel(vertecies, indices, textureCoords)
-	textureID, err := loader.LoadTexture("square.png")
+	textureID, err := loader.LoadTexture("assets/stallTexture.png")
 	if err != nil {
 		panic(err)
 	}
@@ -96,7 +80,7 @@ func main() {
 
 	entity := entity.Entity{
 		Model:    model,
-		Position: mgl32.Vec3{0, 0, 0},
+		Position: mgl32.Vec3{0, 0, -20},
 		RotX:     0,
 		RotY:     0,
 		RotZ:     0,
@@ -123,8 +107,8 @@ func main() {
 		})
 
 	for !window.ShouldClose() {
-		entity.IncreasePosition(0.0, 0, -0.002)
-		camera.Position[0] += 0.002
+		// entity.IncreasePosition(0.0, 0, -0.002)
+		entity.IncreaseRotation(0, 1, 0)
 		render.Prepare()
 		shader.Start()
 

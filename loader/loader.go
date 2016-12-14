@@ -11,6 +11,9 @@ import (
 	"github.com/go-gl/gl/v4.1-core/gl"
 )
 
+// TODO investigate generalizing this and making a Loader interface and struct
+// can load from vertecies, load from obj, etc
+
 // list of vaos and vbos
 var vaos []uint32
 var vbos []uint32

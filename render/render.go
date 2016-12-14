@@ -40,6 +40,7 @@ func createProjectionMatrix() mgl32.Mat4 {
 }
 
 func Prepare() {
+	gl.Enable(gl.DEPTH_TEST)
 	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 }
 
