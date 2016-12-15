@@ -64,12 +64,12 @@ func main() {
 	}
 	render.Initialize(shader)
 
-	rawModel, err := loader.LoadObjModel("assets/stall.obj")
+	rawModel, err := loader.LoadObjModel("assets/dragon.obj")
 	if err != nil {
 		fmt.Println("problem loading model")
 		panic(err)
 	}
-	textureID, err := loader.LoadTexture("assets/stallTexture.png")
+	textureID, err := loader.LoadTexture("assets/blank.png")
 	if err != nil {
 		panic(err)
 	}
@@ -96,13 +96,16 @@ func main() {
 	_ = window.SetKeyCallback(
 		func(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
 			if key == glfw.KeyW && action == glfw.Press {
-				camera.Position = camera.Position.Sub(mgl32.Vec3{0, 0, 0.02})
+				camera.Position = camera.Position.Sub(mgl32.Vec3{0, 0, 0.2})
+			}
+			if key == glfw.KeyS && action == glfw.Press {
+				camera.Position = camera.Position.Add(mgl32.Vec3{0, 0, 0.2})
 			}
 			if key == glfw.KeyD && action == glfw.Press {
-				camera.Position = camera.Position.Add(mgl32.Vec3{0.02, 0, 0})
+				camera.Position = camera.Position.Add(mgl32.Vec3{0.2, 0, 0})
 			}
 			if key == glfw.KeyA && action == glfw.Press {
-				camera.Position = camera.Position.Sub(mgl32.Vec3{0.02, 0, 0})
+				camera.Position = camera.Position.Sub(mgl32.Vec3{0.2, 0, 0})
 			}
 		})
 
