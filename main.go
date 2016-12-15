@@ -6,6 +6,7 @@ import (
 	"runtime"
 
 	"github.com/DrTeePot/game/entity"
+	"github.com/DrTeePot/game/light"
 	"github.com/DrTeePot/game/loader"
 	"github.com/DrTeePot/game/maths"
 	"github.com/DrTeePot/game/model"
@@ -86,6 +87,10 @@ func main() {
 		RotZ:     0,
 		Scale:    1,
 	}
+	coolLight := light.Create(
+		mgl32.Vec3{0, 0, -20},
+		mgl32.Vec3{1, 1, 1},
+	)
 
 	// Configure global settings
 	gl.DepthFunc(gl.LESS)
@@ -114,6 +119,8 @@ func main() {
 		entity.IncreaseRotation(0, 1, 0)
 		render.Prepare()
 		shader.Start()
+		shader.LoadLightPosition(coolLight.Position())
+		shader.LoadLightColour(coolLight.Colour())
 
 		// move the world
 		// could put this somewhere else?

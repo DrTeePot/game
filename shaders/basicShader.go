@@ -9,6 +9,8 @@ type BasicShader interface {
 	LoadTransformationMatrix(math.Mat4)
 	LoadProjectionMatrix(math.Mat4)
 	LoadViewMatrix(math.Mat4)
+	LoadLightPosition(math.Vec3)
+	LoadLightColour(math.Vec3)
 }
 
 type basicShader struct {
@@ -18,6 +20,8 @@ type basicShader struct {
 	transformationMatrix int32
 	projectionMatrix     int32
 	viewMatrix           int32
+	lightPosition        int32
+	lightColour          int32
 }
 
 // NewBasicShader creates a Shader using the shaders from file specified
@@ -33,6 +37,7 @@ func NewBasicShader(vertexShader, fragmentShader string) (BasicShader, error) {
 	// TODO this should be in the specific shader created
 	program.BindAttribute(0, "position")
 	program.BindAttribute(1, "textureCoords")
+	program.BindAttribute(2, "normal")
 
 	// attach and link shaders
 	err = program.LinkProgram()
@@ -44,12 +49,16 @@ func NewBasicShader(vertexShader, fragmentShader string) (BasicShader, error) {
 	t := program.GetUniformLocation("transformationMatrix")
 	p := program.GetUniformLocation("projectionMatrix")
 	v := program.GetUniformLocation("viewMatrix")
+	lp := program.GetUniformLocation("lightPosition")
+	lc := program.GetUniformLocation("lightColour")
 
 	return basicShader{
 		program:              program,
 		transformationMatrix: t,
 		projectionMatrix:     p,
 		viewMatrix:           v,
+		lightPosition:        lp,
+		lightColour:          lc,
 	}, nil
 }
 
@@ -61,11 +70,15 @@ func (s basicShader) Delete() { s.program.Delete() }
 func (s basicShader) LoadTransformationMatrix(matrix math.Mat4) {
 	s.program.LoadMatrix(s.transformationMatrix, matrix)
 }
-
 func (s basicShader) LoadProjectionMatrix(matrix math.Mat4) {
 	s.program.LoadMatrix(s.projectionMatrix, matrix)
 }
-
 func (s basicShader) LoadViewMatrix(matrix math.Mat4) {
 	s.program.LoadMatrix(s.viewMatrix, matrix)
+}
+func (s basicShader) LoadLightPosition(vec math.Vec3) {
+	s.program.LoadVector(s.lightPosition, vec)
+}
+func (s basicShader) LoadLightColour(vec math.Vec3) {
+	s.program.LoadVector(s.lightColour, vec)
 }

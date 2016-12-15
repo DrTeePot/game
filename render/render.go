@@ -51,8 +51,9 @@ func Render(entity entity.Entity, shader shaders.BasicShader) {
 
 	// bind our VAO and the buffers we're using
 	gl.BindVertexArray(model.ID())
-	gl.EnableVertexAttribArray(0)
-	gl.EnableVertexAttribArray(1)
+	gl.EnableVertexAttribArray(0) // enable vertecies
+	gl.EnableVertexAttribArray(1) // enable textures
+	gl.EnableVertexAttribArray(2) // enable normals
 
 	transformationMatrix := maths.CreateTransformationMatrix(
 		entity.Position,
@@ -66,10 +67,11 @@ func Render(entity entity.Entity, shader shaders.BasicShader) {
 
 	// draw the model
 	gl.DrawElements(gl.TRIANGLES, model.VertexCount(),
-		gl.UNSIGNED_INT, nil)
+		gl.UNSIGNED_INT, nil) // draw using elements array
 
 	// cleanup our VAO
-	gl.DisableVertexAttribArray(0)
-	gl.DisableVertexAttribArray(1)
-	gl.BindVertexArray(0)
+	gl.DisableVertexAttribArray(0) // disable vertecies
+	gl.DisableVertexAttribArray(1) // disable textures
+	gl.DisableVertexAttribArray(2) // disable normals
+	gl.BindVertexArray(0)          // unbind model VAO
 }

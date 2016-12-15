@@ -121,7 +121,7 @@ func LoadObjModel(filename string) (model model.RawModel, err error) {
 		verteciesArray[i*3+2] = v.Z()
 	}
 
-	return LoadToModel(verteciesArray, indices, textureArray), nil
+	return LoadToModel(verteciesArray, indices, textureArray, normalsArray), nil
 
 }
 

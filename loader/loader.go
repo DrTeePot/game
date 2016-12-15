@@ -70,12 +70,19 @@ func storeElementArrayBuffer(indices []uint32) {
 
 // Loads vertecies (v), indices (i), and texture coodinates (t) to OpenGL and
 //  stores relevent information in a TexturedModel
-func LoadToModel(v []float32, i []uint32, t []float32) model.RawModel {
-	vao := createVAO()
+func LoadToModel(
+	v []float32,
+	i []uint32,
+	t []float32,
+	n []float32,
+) model.RawModel {
+
+	vao := createVAO()            // create vertex array object
 	_ = storeArrayBuffer(0, v, 3) // store vertices
 	_ = storeArrayBuffer(1, t, 2) // store texture coordinates
+	_ = storeArrayBuffer(2, n, 3) // store normal coordinates
 	storeElementArrayBuffer(i)    // store element arraw, we can only have one
-	unbindVAO()
+	unbindVAO()                   // let other vao's load
 
 	return model.NewRawModel(vao, len(i))
 }
