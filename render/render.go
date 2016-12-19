@@ -12,6 +12,9 @@ import (
 )
 
 func Initialize(shader shaders.BasicShader) {
+	gl.Enable(gl.CULL_FACE)
+	gl.CullFace(gl.BACK)
+	gl.DepthFunc(gl.LESS)
 	projectionMatrix := createProjectionMatrix()
 	shader.Start()
 	shader.LoadProjectionMatrix(projectionMatrix)

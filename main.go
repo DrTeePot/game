@@ -6,6 +6,7 @@ import (
 	"runtime"
 
 	"github.com/DrTeePot/game/entity"
+	"github.com/DrTeePot/game/input"
 	"github.com/DrTeePot/game/light"
 	"github.com/DrTeePot/game/loader"
 	"github.com/DrTeePot/game/maths"
@@ -56,6 +57,8 @@ func main() {
 	version := gl.GoStr(gl.GetString(gl.VERSION))
 	fmt.Println("OpenGL version", version)
 
+	// **** SETUP **** //
+	// shaders
 	vertexShader := "shaders/vertexShader.glsl"
 	fragmentShader := "shaders/fragmentShader.glsl"
 
@@ -65,6 +68,7 @@ func main() {
 	}
 	render.Initialize(shader)
 
+	// model and texture
 	rawModel, err := loader.LoadObjModel("assets/dragon.obj")
 	if err != nil {
 		fmt.Println("problem loading model")
@@ -79,9 +83,7 @@ func main() {
 	texture.SetReflectivity(1)
 	model := model.NewTexturedModel(rawModel, texture)
 
-	var camera entity.Camera // new 0'd camera
-
-	entity := entity.Entity{
+	e := entity.Entity{
 		Model:    model,
 		Position: mgl32.Vec3{0, -5, -20},
 		RotX:     0,
@@ -89,47 +91,52 @@ func main() {
 		RotZ:     0,
 		Scale:    1,
 	}
+
+	// camera
+	var camera entity.Camera // new 0'd camera
+
+	// light
 	coolLight := light.Create(
 		mgl32.Vec3{5, 5, -15},
 		mgl32.Vec3{1, 1, 1},
 	)
 
-	// Configure global settings
-	gl.DepthFunc(gl.LESS)
+	// unit axis
+	x := mgl32.Vec3{1, 0, 0}
+	y := mgl32.Vec3{0, 1, 0}
+	z := mgl32.Vec3{0, 0, 1}
 
-	gl.ClearColor(0.11, 0.545, 0.765, 0.0)
+	// **** KEYBORD INPUT **** //
+	keyboard := input.NewKeyboardListener(window)
+	// TODO rename this keybinding
+	keyboard.OnMovementKey(glfw.KeyW, camera.Move(z, -0.2), camera.Move(z, 0.2))
+	keyboard.OnMovementKey(glfw.KeyS, camera.Move(z, 0.2), camera.Move(z, -0.2))
+	keyboard.OnMovementKey(glfw.KeyD, camera.Move(x, 0.2), camera.Move(x, -0.2))
+	keyboard.OnMovementKey(glfw.KeyA, camera.Move(x, -0.2), camera.Move(x, 0.2))
 
-	// this is disgusting. TODO make a keyboard package
-	_ = window.SetKeyCallback(
-		func(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
-			if key == glfw.KeyW && action == glfw.Press {
-				camera.Position = camera.Position.Sub(mgl32.Vec3{0, 0, 0.2})
-			}
-			if key == glfw.KeyS && action == glfw.Press {
-				camera.Position = camera.Position.Add(mgl32.Vec3{0, 0, 0.2})
-			}
-			if key == glfw.KeyD && action == glfw.Press {
-				camera.Position = camera.Position.Add(mgl32.Vec3{0.2, 0, 0})
-			}
-			if key == glfw.KeyA && action == glfw.Press {
-				camera.Position = camera.Position.Sub(mgl32.Vec3{0.2, 0, 0})
-			}
-		})
+	// jump?
+	keyboard.OnMovementKey(glfw.KeyLeftShift, camera.Move(y, -0.2), camera.Move(y, 0.2))
+	keyboard.OnMovementKey(glfw.KeySpace, camera.Move(y, 0.2), camera.Move(y, -0.2))
 
+	// **** MAIN LOOP **** //
+	gl.ClearColor(0.11, 0.545, 0.765, 0.0) // set background colour
 	for !window.ShouldClose() {
-		// entity.IncreasePosition(0.0, 0, -0.002)
-		entity.IncreaseRotation(0, 1, 0)
+		// rotate our entity
+		e.IncreaseRotation(0, 1, 0)
+		camera.Update()
+
+		// **** RENDER LOOP **** //
 		render.Prepare()
 		shader.Start()
 		shader.LoadLightPosition(coolLight.Position())
 		shader.LoadLightColour(coolLight.Colour())
 
-		// move the world
-		// could put this somewhere else?
+		// render the piece of the world that the camera
+		//    is looking at
 		viewMatrix := maths.CreateViewMatrix(camera)
 		shader.LoadViewMatrix(viewMatrix)
 
-		render.Render(entity, shader)
+		render.Render(e, shader)
 
 		shader.Stop()
 
@@ -138,6 +145,7 @@ func main() {
 		glfw.PollEvents()
 	}
 
+	// **** CLEANUP **** //
 	shader.Delete()
 	loader.CleanUp()
 }
