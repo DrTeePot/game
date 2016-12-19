@@ -1,6 +1,8 @@
 package shaders
 
 import (
+	"github.com/DrTeePot/game/light"
+
 	math "github.com/go-gl/mathgl/mgl32"
 )
 
@@ -9,8 +11,11 @@ type BasicShader interface {
 	LoadTransformationMatrix(math.Mat4)
 	LoadProjectionMatrix(math.Mat4)
 	LoadViewMatrix(math.Mat4)
+	// next three -> 1
 	LoadLightPosition(math.Vec3)
 	LoadLightColour(math.Vec3)
+	LoadLight(light.Light) // light should be an entity, or a component
+	LoadSpecular(float32, float32)
 }
 
 type basicShader struct {
@@ -22,6 +27,8 @@ type basicShader struct {
 	viewMatrix           int32
 	lightPosition        int32
 	lightColour          int32
+	shineDamper          int32
+	reflectivity         int32
 }
 
 // NewBasicShader creates a Shader using the shaders from file specified
@@ -51,6 +58,8 @@ func NewBasicShader(vertexShader, fragmentShader string) (BasicShader, error) {
 	v := program.GetUniformLocation("viewMatrix")
 	lp := program.GetUniformLocation("lightPosition")
 	lc := program.GetUniformLocation("lightColour")
+	s := program.GetUniformLocation("shineDamper")
+	r := program.GetUniformLocation("reflectivity")
 
 	return basicShader{
 		program:              program,
@@ -59,6 +68,8 @@ func NewBasicShader(vertexShader, fragmentShader string) (BasicShader, error) {
 		viewMatrix:           v,
 		lightPosition:        lp,
 		lightColour:          lc,
+		shineDamper:          s,
+		reflectivity:         r,
 	}, nil
 }
 
@@ -81,4 +92,12 @@ func (s basicShader) LoadLightPosition(vec math.Vec3) {
 }
 func (s basicShader) LoadLightColour(vec math.Vec3) {
 	s.program.LoadVector(s.lightColour, vec)
+}
+func (s basicShader) LoadLight(l light.Light) {
+	s.LoadLightPosition(l.Position())
+	s.LoadLightColour(l.Colour())
+}
+func (s basicShader) LoadSpecular(shine float32, ref float32) {
+	s.program.LoadFloat(s.shineDamper, shine)
+	s.program.LoadFloat(s.reflectivity, ref)
 }

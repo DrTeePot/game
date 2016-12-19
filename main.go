@@ -75,20 +75,22 @@ func main() {
 		panic(err)
 	}
 	texture := model.NewTexture(textureID)
+	texture.SetShine(10)
+	texture.SetReflectivity(1)
 	model := model.NewTexturedModel(rawModel, texture)
 
 	var camera entity.Camera // new 0'd camera
 
 	entity := entity.Entity{
 		Model:    model,
-		Position: mgl32.Vec3{0, 0, -20},
+		Position: mgl32.Vec3{0, -5, -20},
 		RotX:     0,
 		RotY:     0,
 		RotZ:     0,
 		Scale:    1,
 	}
 	coolLight := light.Create(
-		mgl32.Vec3{0, 0, -20},
+		mgl32.Vec3{5, 5, -15},
 		mgl32.Vec3{1, 1, 1},
 	)
 

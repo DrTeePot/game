@@ -48,6 +48,7 @@ func Prepare() {
 func Render(entity entity.Entity, shader shaders.BasicShader) {
 	tModel := entity.Model
 	model := tModel.RawModel()
+	texture := tModel.Texture()
 
 	// bind our VAO and the buffers we're using
 	gl.BindVertexArray(model.ID())
@@ -60,10 +61,11 @@ func Render(entity entity.Entity, shader shaders.BasicShader) {
 		entity.RotX, entity.RotY, entity.RotZ,
 		entity.Scale)
 	shader.LoadTransformationMatrix(transformationMatrix)
+	shader.LoadSpecular(texture.Shine(), texture.Reflectivity())
 
 	// setup texture
 	gl.ActiveTexture(gl.TEXTURE0)
-	gl.BindTexture(gl.TEXTURE_2D, tModel.Texture().ID())
+	gl.BindTexture(gl.TEXTURE_2D, texture.ID())
 
 	// draw the model
 	gl.DrawElements(gl.TRIANGLES, model.VertexCount(),

@@ -6,6 +6,7 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 )
 
+// TODO pretty sure mgl has this functionality
 func CreateTransformationMatrix(translation mgl32.Vec3, rx, ry, rz, scale float32) mgl32.Mat4 {
 	// TODO create different methods for these, look at Java code from gr 12
 	// new identity matrix
