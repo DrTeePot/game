@@ -18,7 +18,8 @@ void main(void){
     vec3 unitLight = normalize(toLightVector);
 
     float lightIntensity = dot(unitNormal, unitLight);
-    float brightness = max(lightIntensity, 0.0); // don't want negative intensity
+    // 0.1 is ambient lighting
+    float brightness = max(lightIntensity, 0.1); // don't want negative intensity
     vec3 diffuseLight = brightness * lightColour; // our light should be coloured
 
     // specular
