@@ -101,15 +101,22 @@ the state and engine structure, and then the game code itself.
 
 The proposed tree is:
 
+- ecs / go-redux
+  - helpers for managing state
+  - helpers for managing actions 
+  - helpers for managing reducers
+  - connection functions to connect these things to the engine
 - engine (fluorine?):
+  - component creation
   - render
   - world generator (honeycomb?, benzene?)
   - audio
   - physics
   - scripting
   - AI (when created)
-  - reducers
-  - actions
+  - reducers?
+  - actions? (these may be unnecessary if the components are listening to
+    props that mirror state stored in the game
 - game logic
   - main.go (entrypoint)
   - components
@@ -126,8 +133,78 @@ The proposed tree is:
   - reducers
     - application logic
   - actions
-    - atomic custom actions that can happen in the game, note that engine 
-        related actions will come from the engine
+    - atomic actions that can happen in the game 
   - middleware
     - side effects from actions that can't be handled with state, like logging
       or syncronization
+
+## Engine
+
+### Components
+
+A system for creating composable pieces of the system. 
+Uses commonly defined interfaces to interact with pieces, many components
+will implement the same interface of actions in mapDispatchToProps.
+
+```golang
+type props struct {
+    x, y, z, velocity: Integer
+    setPosition: func(x, y z) void
+}
+
+type OakTree struct {
+    id Identifier
+    props props
+    state State    
+}
+
+func mapStateToProps(state): Props {
+    self := state.tree.id
+    return {
+        x: self.x,
+        y: self.y,
+        z: self.z,
+        velocity: self.velocity,
+    }
+}
+
+func mapDispatchToProps(dispatch): Props {
+
+}
+
+func (o OakTree) Render() Renderable {
+    // return some mesh and animation type thing based on state
+    // maybe a particle effect to drop leaves
+}
+
+func (o OakTree) doSomething() {
+    // do something, look at state, call some actions on props, etc
+}
+
+func NewOakTree(world) {
+    id := world.CreateComponent() // some options
+    props := world.connect(mapStateToProps)(OakTree)
+    state := world.subscribe(id)
+
+    // idk whether to do this here or have a props object or what
+    o := OakTree{
+        x: state.x,
+        y: state.y,
+        x: state.z,
+    }
+    world.register(o.doSomething)
+}
+```
+
+### Render
+
+This needs to handle: 
+
+- creation of 3d objects (meshes)
+- creation of particle systems
+- creation of lights
+- render them when they move
+- various transforms
+- create and modify shaders
+
+### Audio
