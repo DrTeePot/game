@@ -3,7 +3,7 @@ package render
 import (
 	"math"
 
-	"github.com/DrTeePot/game/entity"
+	"github.com/DrTeePot/game/components"
 	"github.com/DrTeePot/game/maths"
 	"github.com/DrTeePot/game/shaders"
 
@@ -47,22 +47,30 @@ func Prepare() {
 	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 }
 
+type renderable interface {
+	components.Positionable
+	components.Rotateable
+	components.Scaleable
+	components.Renderable
+}
+
 // TODO RawModel as an interface?
-func Render(entity entity.Entity, shader shaders.BasicShader) {
-	tModel := entity.Model
-	model := tModel.RawModel()
-	texture := tModel.Texture()
+func Render(e renderable, shader shaders.BasicShader) {
+	mesh := e.Mesh()
+	texture := e.Texture()
 
 	// bind our VAO and the buffers we're using
-	gl.BindVertexArray(model.ID())
+	gl.BindVertexArray(mesh.ID())
 	gl.EnableVertexAttribArray(0) // enable vertecies
 	gl.EnableVertexAttribArray(1) // enable textures
 	gl.EnableVertexAttribArray(2) // enable normals
 
+	r := e.Rotation()
+
 	transformationMatrix := maths.CreateTransformationMatrix(
-		entity.Position,
-		entity.RotX, entity.RotY, entity.RotZ,
-		entity.Scale)
+		e.Position(),
+		r.X(), r.Y(), r.Z(),
+		e.Scale())
 	shader.LoadTransformationMatrix(transformationMatrix)
 	shader.LoadSpecular(texture.Shine(), texture.Reflectivity())
 
@@ -71,7 +79,7 @@ func Render(entity entity.Entity, shader shaders.BasicShader) {
 	gl.BindTexture(gl.TEXTURE_2D, texture.ID())
 
 	// draw the model
-	gl.DrawElements(gl.TRIANGLES, model.VertexCount(),
+	gl.DrawElements(gl.TRIANGLES, mesh.VertexCount(),
 		gl.UNSIGNED_INT, nil) // draw using elements array
 
 	// cleanup our VAO

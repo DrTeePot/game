@@ -1,36 +1,33 @@
-package loader
+package components
 
 import (
-	"fmt"
-	"image"
-	"image/draw"
-	_ "image/png"
+	"bufio"
 	"os"
+	"strconv"
+	"strings"
 
-	"github.com/DrTeePot/game/model"
 	"github.com/go-gl/gl/v4.1-core/gl"
+	"github.com/go-gl/mathgl/mgl32"
 )
-
-// TODO investigate generalizing this and making a Loader interface and struct
-// can load from vertecies, load from obj, etc
 
 // list of vaos and vbos
 var vaos []uint32
 var vbos []uint32
 var textures []uint32
 
-func init() {
-	vaos = make([]uint32, 10)
-	vbos = make([]uint32, 10)
-	textures = make([]uint32, 10)
-}
-
-func CleanUp() {
+// CleanUp removes our VAO's and buffers from memory
+func DeleteMesh() {
 	// needs the length and a pointer to the first element
 	// c bindings are a pain
 	gl.DeleteVertexArrays(int32(len(vaos)), &vaos[0])
 	gl.DeleteBuffers(int32(len(vbos)), &vbos[0])
 	gl.DeleteTextures(int32(len(textures)), &textures[0])
+}
+
+func init() {
+	vaos = []uint32{}
+	vbos = []uint32{}
+	textures = []uint32{}
 }
 
 func createVAO() uint32 {
@@ -68,15 +65,12 @@ func storeElementArrayBuffer(indices []uint32) {
 	vbos = append(vbos, indicesBufferID) // cleanup
 }
 
-// Loads vertecies (v), indices (i), and texture coodinates (t) to OpenGL and
-//  stores relevent information in a TexturedModel
-func LoadToModel(
+func loadMeshToOpenGL(
 	v []float32,
 	i []uint32,
 	t []float32,
 	n []float32,
-) model.RawModel {
-
+) (vao uint32, vertexCount int32) {
 	vao := createVAO()            // create vertex array object
 	_ = storeArrayBuffer(0, v, 3) // store vertices
 	_ = storeArrayBuffer(1, t, 2) // store texture coordinates
@@ -84,44 +78,61 @@ func LoadToModel(
 	storeElementArrayBuffer(i)    // store element arraw, we can only have one
 	unbindVAO()                   // let other vao's load
 
-	return model.NewRawModel(vao, len(i))
+	return vao, int32(len(i))
 }
 
-// LoadTexture loads a png file into a texture, returns the ID
-func LoadTexture(file string) (uint32, error) {
-	imgFile, err := os.Open(file)
-	if err != nil {
-		return 0, fmt.Errorf("texture %q not found on disk: %v", file, err)
-	}
-	img, _, err := image.Decode(imgFile)
-	if err != nil {
-		return 0, err
-	}
+// ****** LOADING HELPERS ****
+type faceVertex struct {
+	N uint32
+	T uint32
+	I uint32
+}
+type face [3]faceVertex
 
-	rgba := image.NewRGBA(img.Bounds())
-	if rgba.Stride != rgba.Rect.Size().X*4 {
-		return 0, fmt.Errorf("unsupported stride")
+func createFace(vertecies ...[]string) face {
+	f := face{}
+	for i, v := range vertecies {
+		f[i] = faceVertex{
+			I: parseI(v[0]),
+			T: parseI(v[1]),
+			N: parseI(v[2]),
+		}
 	}
-	draw.Draw(rgba, rgba.Bounds(), img, image.Point{0, 0}, draw.Src)
+	return f
 
-	var texture uint32
-	gl.GenTextures(1, &texture)
-	gl.ActiveTexture(gl.TEXTURE0)
-	gl.BindTexture(gl.TEXTURE_2D, texture)
-	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
-	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
-	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
-	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
-	gl.TexImage2D(
-		gl.TEXTURE_2D,
-		0,
-		gl.RGBA,
-		int32(rgba.Rect.Size().X),
-		int32(rgba.Rect.Size().Y),
-		0,
-		gl.RGBA,
-		gl.UNSIGNED_BYTE,
-		gl.Ptr(rgba.Pix))
+}
 
-	return texture, nil
+func parseI(b string) uint32 {
+	p, _ := strconv.ParseUint(b, 10, 64)
+	return uint32(p)
+}
+func parse(b string) float32 {
+	p, _ := strconv.ParseFloat(b, 64)
+	return float32(p)
+}
+
+func processVertex(
+	vertexData faceVertex,
+	indices []uint32,
+	textures []mgl32.Vec2,
+	normals []mgl32.Vec3,
+	textureArray []float32,
+	normalsArray []float32,
+) []uint32 {
+	// TODO this is a mess, heavy refactoring needed
+	index := vertexData.I - 1
+	indices = append(indices, index)
+
+	// obj starts at 1 not 0
+	currentTex := textures[vertexData.T-1]
+	textureArray[index*2] = currentTex.X()
+	// blender renders textures with reversed y axis
+	textureArray[index*2+1] = 1 - currentTex.Y()
+
+	currentNorm := normals[vertexData.N-1]
+	normalsArray[index*3] = currentNorm.X()
+	normalsArray[index*3+1] = currentNorm.Y()
+	normalsArray[index*3+2] = currentNorm.Z()
+
+	return indices
 }

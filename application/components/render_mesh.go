@@ -1,50 +1,59 @@
-package loader
+package components
 
 import (
-	"bufio"
-	"os"
-	"strconv"
-	"strings"
-
-	"github.com/DrTeePot/game/model"
-
-	"github.com/go-gl/mathgl/mgl32"
+	"github.github.com/go-gl/mathgl/mgl32"
 )
 
-type faceVertex struct {
-	N uint32
-	T uint32
-	I uint32
-}
-type face [3]faceVertex
+// TODO simplify render_mesh + mesh_utils
+type Mesh struct {
+	File string
 
-func createFace(vertecies ...[]string) face {
-	f := face{}
-	for i, v := range vertecies {
-		f[i] = faceVertex{
-			I: parseI(v[0]),
-			T: parseI(v[1]),
-			N: parseI(v[2]),
-		}
+	// TODO should this data be here?
+	loaded bool
+	mesh   meshData
+}
+
+// TODO maybe we don't want to cache this? then only renderer can see it
+type meshData struct {
+	vao         uint32
+	vertexCount int32
+}
+
+// fulfills system.MeshLoader interface
+// TODO if meshData is removed, this doesn't need to be a pointer
+func (r *Mesh) LoadMesh() (vao uint32, vertexCount int32, err error) {
+	if r.loaded {
+		return r.mesh.vao, r.mesh.vertexCount
 	}
-	return f
 
+	// we haven't loaded, load our mesh
+	vao, vertexCount, err = loadMeshFile(r.file)
+	r.mesh = meshData{
+		vao:         vao,
+		vertexCount: vertexCount,
+	}
+
+	// if an error didn't occur, then we loaded correctly :)
+	if err != nil {
+		loaded = true
+	}
+
+	return vao, vertexCount, err
 }
 
-func parseI(b string) uint32 {
-	p, _ := strconv.ParseUint(b, 10, 64)
-	return uint32(p)
-}
-func parse(b string) float32 {
-	p, _ := strconv.ParseFloat(b, 64)
-	return float32(p)
+func newMeshData(
+	v []float32,
+	i []uint32,
+	t []float32,
+	n []float32,
+) (vao uint32, count int32) {
+	return loadMeshToOpenGL(v, i, t, n)
 }
 
-// TODO create type loader that can be added to models?
-func LoadObjModel(filename string) (model model.RawModel, err error) {
+func loadMeshFile(string file) (vao uint32, vc int32, err error) {
 	file, err := os.Open(filename)
 	if err != nil {
-		return model, err
+		return
 	}
 	defer file.Close()
 
@@ -94,7 +103,7 @@ func LoadObjModel(filename string) (model model.RawModel, err error) {
 		}
 	}
 	if err = scanner.Err(); err != nil {
-		return model, err
+		return // error
 	}
 
 	// make the model
@@ -121,32 +130,5 @@ func LoadObjModel(filename string) (model model.RawModel, err error) {
 		verteciesArray[i*3+2] = v.Z()
 	}
 
-	return LoadToModel(verteciesArray, indices, textureArray, normalsArray), nil
-
-}
-
-func processVertex(
-	vertexData faceVertex,
-	indices []uint32,
-	textures []mgl32.Vec2,
-	normals []mgl32.Vec3,
-	textureArray []float32,
-	normalsArray []float32,
-) []uint32 {
-	// TODO this is a mess, heavy refactoring needed
-	index := vertexData.I - 1
-	indices = append(indices, index)
-
-	// obj starts at 1 not 0
-	currentTex := textures[vertexData.T-1]
-	textureArray[index*2] = currentTex.X()
-	// blender renders textures with reversed y axis
-	textureArray[index*2+1] = 1 - currentTex.Y()
-
-	currentNorm := normals[vertexData.N-1]
-	normalsArray[index*3] = currentNorm.X()
-	normalsArray[index*3+1] = currentNorm.Y()
-	normalsArray[index*3+2] = currentNorm.Z()
-
-	return indices
+	return newMeshData(verteciesArray, indices, textureArray, normalsArray), nil
 }
