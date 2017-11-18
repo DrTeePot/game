@@ -13,7 +13,7 @@ const (
 	GLFW_MINOR_VERSION = 1
 )
 
-func New(int width, int height, string name) {
+func NewWindow(int width, int height, string name) {
 	if err := glfw.Init(); err != nil {
 		log.Fatalln("failed to initialize glfw:", err)
 	}
@@ -41,6 +41,6 @@ func New(int width, int height, string name) {
 	return window
 }
 
-func Exit() {
+func CloseWindow() {
 	glfw.Terminate()
 }

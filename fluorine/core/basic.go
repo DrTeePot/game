@@ -1,6 +1,6 @@
-package ecs
+package core
 
-// TODO this isn't threadsafe
+// TODO this isn't threadsafe, use a UUID
 var next uint32
 
 func Init() {
@@ -14,7 +14,7 @@ type Basic struct {
 
 func Create() {
 	next = next + 1
-	return &Basic{
+	return Basic{
 		ID: next,
 	}
 }

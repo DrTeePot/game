@@ -3,19 +3,90 @@ package render
 import (
 	"math"
 
-	"github.com/DrTeePot/game/components"
-	"github.com/DrTeePot/game/maths"
-	"github.com/DrTeePot/game/shaders"
+	"github.com/DrTeePot/game/fluorine/render/shaders"
 
 	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/mathgl/mgl32"
 )
 
-func Initialize(shader shaders.BasicShader) {
+type Renderer interface {
+	Render()
+}
+
+type lightEntity struct {
+	position math.Vec3
+	colour   math.Vec3
+}
+
+// TODO rename?
+type Renderable struct {
+	meshID       uint32
+	vertexCount  uint32
+	textureID    uint32
+	shine        uint32
+	reflectivity uint32
+	transform    mgl32.Mat4 // TODO create nice methods to update this
+}
+
+type shadedEntities [][]Renderable
+
+func (e shadedEntities) entitiesByShader(shaderID uint32) {
+	return e[shaderID]
+}
+
+/*
+Might also need to keep track of shaders here, since they may need
+to be deleted at some point, like when the program ends?
+
+We also need to remove VAO's from memory when things end?
+*/
+type RenderEngine struct {
+	entities shadedEntities
+	lights   []lightEntity
+	shaders  []shaders.BasicShader // actually not this
+	camera   Camera
+}
+
+func NewEngine(entities []Renderable, lights lightEntity, camera Camera) {
+	// return an object that does the things
+	// has a shader
+	initializeOpenGL()
+
+	return RenderEngine{
+		entities: entities,
+		lights:   lights,
+		camera:   camera,
+	}
+}
+
+func (r RenderEngine) Start() {
+	// run a loop that just calls renderAll
+}
+
+// The bulk of the renderer
+func (r RenderEngine) renderAll() {
+	prepare()
+	for _, e := range r.entities {
+		e.render(r.camera.viewMatrix, r.lights)
+	}
+}
+
+func (r RenderEngine) AddLight(light lightEntity) {
+	// TODO pretty obvious, will use a channel
+}
+
+func (r RenderEngine) AddRenderable(entity Renderable) {
+	// TODO pretty obvious, will use a channel
+}
+
+// Called when we first create the render engine
+func initializeOpenGL(shader shaders.BasicShader) {
 	gl.Enable(gl.CULL_FACE)
 	gl.CullFace(gl.BACK)
 	gl.DepthFunc(gl.LESS)
+
 	projectionMatrix := createProjectionMatrix()
+
 	shader.Start()
 	shader.LoadProjectionMatrix(projectionMatrix)
 	shader.Stop()
@@ -42,49 +113,44 @@ func createProjectionMatrix() mgl32.Mat4 {
 	return matrix
 }
 
-func Prepare() {
+// Gets run on each update?
+func prepare() {
 	gl.Enable(gl.DEPTH_TEST)
 	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 }
 
-type renderable interface {
-	components.Positionable
-	components.Rotateable
-	components.Scaleable
-	components.Renderable
-}
+// Should this be a method on a Renderable? probably this should be an interface, let each component take care of how it wants to be rendered?
+func (r Renderable) render(viewMatrix mgl32.Mat4, lights []lightEntity) {
+	// prepare shader
+	r.shader.Start()
 
-// TODO RawModel as an interface?
-func Render(e renderable, shader shaders.BasicShader) {
-	mesh := e.Mesh()
-	texture := e.Texture()
+	// loop over this based on lights in scene
+	r.shader.LoadLightPosition(lights[0].position)
+	r.shader.LoadLightColour(lights[0].colour)
+
+	r.shader.LoadViewMatrix(viewMatrix)
+	r.shader.LoadTransformationMatrix(r.transform)
+	r.shader.LoadSpecular(r.shine, r.reflectivity)
 
 	// bind our VAO and the buffers we're using
-	gl.BindVertexArray(mesh.ID())
+	gl.BindVertexArray(r.meshID)
 	gl.EnableVertexAttribArray(0) // enable vertecies
 	gl.EnableVertexAttribArray(1) // enable textures
 	gl.EnableVertexAttribArray(2) // enable normals
 
-	r := e.Rotation()
-
-	transformationMatrix := maths.CreateTransformationMatrix(
-		e.Position(),
-		r.X(), r.Y(), r.Z(),
-		e.Scale())
-	shader.LoadTransformationMatrix(transformationMatrix)
-	shader.LoadSpecular(texture.Shine(), texture.Reflectivity())
-
 	// setup texture
 	gl.ActiveTexture(gl.TEXTURE0)
-	gl.BindTexture(gl.TEXTURE_2D, texture.ID())
+	gl.BindTexture(gl.TEXTURE_2D, r.textureID)
 
 	// draw the model
-	gl.DrawElements(gl.TRIANGLES, mesh.VertexCount(),
-		gl.UNSIGNED_INT, nil) // draw using elements array
+	// draw using elements array
+	gl.DrawElements(gl.TRIANGLES, r.vertexCount, gl.UNSIGNED_INT, nil)
 
 	// cleanup our VAO
 	gl.DisableVertexAttribArray(0) // disable vertecies
 	gl.DisableVertexAttribArray(1) // disable textures
 	gl.DisableVertexAttribArray(2) // disable normals
 	gl.BindVertexArray(0)          // unbind model VAO
+
+	r.shader.Stop()
 }
