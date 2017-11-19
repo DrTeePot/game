@@ -1,10 +1,7 @@
 package components
 
 import (
-	"bufio"
-	"os"
 	"strconv"
-	"strings"
 
 	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/mathgl/mgl32"
@@ -71,7 +68,7 @@ func loadMeshToOpenGL(
 	t []float32,
 	n []float32,
 ) (vao uint32, vertexCount int32) {
-	vao := createVAO()            // create vertex array object
+	vao = createVAO()             // create vertex array object
 	_ = storeArrayBuffer(0, v, 3) // store vertices
 	_ = storeArrayBuffer(1, t, 2) // store texture coordinates
 	_ = storeArrayBuffer(2, n, 3) // store normal coordinates

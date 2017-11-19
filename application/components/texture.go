@@ -26,7 +26,7 @@ type Texture struct {
 // fulfiles system.TextureLoader interface
 func (t *Texture) LoadTexture() (id uint32, err error) {
 	// Load the file
-	file = t.File
+	file := t.File
 	imgFile, err := os.Open(file)
 	if err != nil {
 		return 0, fmt.Errorf("texture %q not found on disk: %v", file, err)

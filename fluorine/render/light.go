@@ -1,4 +1,4 @@
-package light
+package render
 
 import (
 	"github.com/go-gl/mathgl/mgl32"
@@ -9,7 +9,7 @@ type Light struct {
 	colour   mgl32.Vec3
 }
 
-func Create(p, c mgl32.Vec3) Light {
+func NewLight(p, c mgl32.Vec3) Light {
 	return Light{p, c}
 }
 

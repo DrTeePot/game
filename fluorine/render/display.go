@@ -1,11 +1,11 @@
-package display
+package render
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/glfw/v3.2/glfw"
-	"github.com/go-gl/mathgl/mgl32"
 )
 
 const (
@@ -13,7 +13,7 @@ const (
 	GLFW_MINOR_VERSION = 1
 )
 
-func NewWindow(int width, int height, string name) {
+func NewWindow(width, height int, name string) *glfw.Window {
 	if err := glfw.Init(); err != nil {
 		log.Fatalln("failed to initialize glfw:", err)
 	}

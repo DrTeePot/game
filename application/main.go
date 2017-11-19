@@ -1,22 +1,11 @@
 package main
 
 import (
-	"fmt"
-	"log"
 	"runtime"
 
-	"github.com/go-gl/gl/v4.1-core/gl"
-	"github.com/go-gl/glfw/v3.2/glfw"
 	"github.com/go-gl/mathgl/mgl32"
 
-	"github.com/DrTeePot/game/fluorine/input"
 	"github.com/DrTeePot/game/fluorine/render"
-	"github.com/DrTeePot/game/fluorine/render/light"
-	"github.com/DrTeePot/game/fluorine/render/maths"
-	"github.com/DrTeePot/game/fluorine/render/system/renderer"
-
-	"./components"
-	"./entity"
 )
 
 const (
@@ -32,7 +21,7 @@ func init() {
 }
 
 func main() {
-	window := render.NewWindow()
+	window := render.NewWindow(windowWidth, windowHeight, "game")
 	// probably also do cleanup?
 	defer render.CloseWindow()
 
@@ -59,7 +48,14 @@ func main() {
 		- figure out how lights are handled
 		// TODO eventually make entites and lights using AddLight and AddEntity
 	*/
-	renderEngine = render.NewEngine(entities, lights)
+	entities := []render.Renderable{{}}
+	lights := []render.Light{render.NewLight(
+		mgl32.Vec3{5, 5, -15},
+		mgl32.Vec3{1, 1, 1},
+	)}
+	camera := render.Camera{}
+
+	renderEngine := render.NewEngine(entities, lights, camera)
 
 	/*
 		Terrain:
@@ -79,18 +75,9 @@ func main() {
 		- start render engine (runs in this thread, this has to happen
 		last)
 	*/
-	renderEngine.Start(camera)
+	// TODO this won't work properly right now since it will only
+	// render entities that were passed into NewEngine, since it's pass
+	// by value
+	renderEngine.Start(window)
 
-	gl.ClearColor(0.11, 0.545, 0.765, 0.0) // set background colour
-	for !window.ShouldClose() {
-		// **** RENDER LOOP **** //
-		render.Update(0) // eventually pass in real time between frames
-
-		// Maintenance
-		window.SwapBuffers()
-		glfw.PollEvents()
-	}
-
-	// **** CLEANUP **** //
-	shader.Delete()
 }

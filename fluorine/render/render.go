@@ -3,34 +3,30 @@ package render
 import (
 	"math"
 
-	"github.com/DrTeePot/game/fluorine/render/shaders"
-
 	"github.com/go-gl/gl/v4.1-core/gl"
+	"github.com/go-gl/glfw/v3.2/glfw"
 	"github.com/go-gl/mathgl/mgl32"
+
+	"github.com/DrTeePot/game/fluorine/render/shaders"
 )
 
 type Renderer interface {
 	Render()
 }
 
-type lightEntity struct {
-	position math.Vec3
-	colour   math.Vec3
-}
-
 // TODO rename?
 type Renderable struct {
 	meshID       uint32
-	vertexCount  uint32
+	vertexCount  int32
 	textureID    uint32
-	shine        uint32
-	reflectivity uint32
+	shine        float32
+	reflectivity float32
 	transform    mgl32.Mat4 // TODO create nice methods to update this
 }
 
 type shadedEntities [][]Renderable
 
-func (e shadedEntities) entitiesByShader(shaderID uint32) {
+func (e shadedEntities) entitiesByShader(shaderID uint32) []Renderable {
 	return e[shaderID]
 }
 
@@ -41,37 +37,61 @@ to be deleted at some point, like when the program ends?
 We also need to remove VAO's from memory when things end?
 */
 type RenderEngine struct {
-	entities shadedEntities
-	lights   []lightEntity
-	shaders  []shaders.BasicShader // actually not this
+	entities []Renderable // TODO eventually segment by shader
+	lights   []Light
+	programs [1]shaders.BasicShader // TODO make more general
 	camera   Camera
 }
 
-func NewEngine(entities []Renderable, lights lightEntity, camera Camera) {
+func NewEngine(
+	entities []Renderable,
+	lights []Light,
+	camera Camera,
+) RenderEngine {
 	// return an object that does the things
 	// has a shader
-	initializeOpenGL()
+
+	shader, err := shaders.NewBasicShader()
+	if err != nil {
+		panic(err)
+	}
+
+	initializeOpenGL(shader)
 
 	return RenderEngine{
 		entities: entities,
 		lights:   lights,
 		camera:   camera,
+		programs: [1]shaders.BasicShader{shader},
 	}
 }
 
-func (r RenderEngine) Start() {
+func (r RenderEngine) Start(window *glfw.Window) {
 	// run a loop that just calls renderAll
+	gl.ClearColor(0.11, 0.545, 0.765, 0.0) // set background colour
+	for !window.ShouldClose() {
+		// **** RENDER LOOP **** //
+		r.renderAll() // eventually pass in real time between frames
+
+		// Maintenance
+		window.SwapBuffers()
+		glfw.PollEvents()
+	}
+
+	// **** CLEANUP **** //
+	r.programs[0].Delete()
 }
 
 // The bulk of the renderer
 func (r RenderEngine) renderAll() {
 	prepare()
 	for _, e := range r.entities {
-		e.render(r.camera.viewMatrix, r.lights)
+		viewMatrix := CreateViewMatrix(r.camera)
+		e.Render(viewMatrix, r.lights, r.programs[0])
 	}
 }
 
-func (r RenderEngine) AddLight(light lightEntity) {
+func (r RenderEngine) AddLight(light Light) {
 	// TODO pretty obvious, will use a channel
 }
 
@@ -119,18 +139,18 @@ func prepare() {
 	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 }
 
-// Should this be a method on a Renderable? probably this should be an interface, let each component take care of how it wants to be rendered?
-func (r Renderable) render(viewMatrix mgl32.Mat4, lights []lightEntity) {
+// TODO move to individual entities specifying their render methods
+// TODO somehow improve how we associate shaders and entities... maybe an int?
+func (r Renderable) Render(viewMatrix mgl32.Mat4, lights []Light, shader shaders.BasicShader) {
 	// prepare shader
-	r.shader.Start()
+	shader.Start()
 
 	// loop over this based on lights in scene
-	r.shader.LoadLightPosition(lights[0].position)
-	r.shader.LoadLightColour(lights[0].colour)
+	shader.LoadLight(lights[0].position, lights[0].colour)
 
-	r.shader.LoadViewMatrix(viewMatrix)
-	r.shader.LoadTransformationMatrix(r.transform)
-	r.shader.LoadSpecular(r.shine, r.reflectivity)
+	shader.LoadViewMatrix(viewMatrix)
+	shader.LoadTransformationMatrix(r.transform)
+	shader.LoadSpecular(r.shine, r.reflectivity)
 
 	// bind our VAO and the buffers we're using
 	gl.BindVertexArray(r.meshID)
@@ -152,5 +172,5 @@ func (r Renderable) render(viewMatrix mgl32.Mat4, lights []lightEntity) {
 	gl.DisableVertexAttribArray(2) // disable normals
 	gl.BindVertexArray(0)          // unbind model VAO
 
-	r.shader.Stop()
+	shader.Stop()
 }

@@ -1,7 +1,11 @@
 package components
 
 import (
-	"github.github.com/go-gl/mathgl/mgl32"
+	"bufio"
+	"os"
+	"strings"
+
+	"github.com/go-gl/mathgl/mgl32"
 )
 
 // TODO simplify render_mesh + mesh_utils
@@ -23,11 +27,11 @@ type meshData struct {
 // TODO if meshData is removed, this doesn't need to be a pointer
 func (r *Mesh) LoadMesh() (vao uint32, vertexCount int32, err error) {
 	if r.loaded {
-		return r.mesh.vao, r.mesh.vertexCount
+		return r.mesh.vao, r.mesh.vertexCount, nil
 	}
 
 	// we haven't loaded, load our mesh
-	vao, vertexCount, err = loadMeshFile(r.file)
+	vao, vertexCount, err = loadMeshFile(r.File)
 	r.mesh = meshData{
 		vao:         vao,
 		vertexCount: vertexCount,
@@ -35,22 +39,13 @@ func (r *Mesh) LoadMesh() (vao uint32, vertexCount int32, err error) {
 
 	// if an error didn't occur, then we loaded correctly :)
 	if err != nil {
-		loaded = true
+		r.loaded = true
 	}
 
 	return vao, vertexCount, err
 }
 
-func newMeshData(
-	v []float32,
-	i []uint32,
-	t []float32,
-	n []float32,
-) (vao uint32, count int32) {
-	return loadMeshToOpenGL(v, i, t, n)
-}
-
-func loadMeshFile(string file) (vao uint32, vc int32, err error) {
+func loadMeshFile(filename string) (vao uint32, vc int32, err error) {
 	file, err := os.Open(filename)
 	if err != nil {
 		return
@@ -130,5 +125,11 @@ func loadMeshFile(string file) (vao uint32, vc int32, err error) {
 		verteciesArray[i*3+2] = v.Z()
 	}
 
-	return newMeshData(verteciesArray, indices, textureArray, normalsArray), nil
+	vao, vcount := loadMeshToOpenGL(
+		verteciesArray,
+		indices,
+		textureArray,
+		normalsArray)
+
+	return vao, vcount, nil
 }
