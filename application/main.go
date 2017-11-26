@@ -3,8 +3,7 @@ package main
 import (
 	"runtime"
 
-	"github.com/go-gl/mathgl/mgl32"
-
+	"github.com/DrTeePot/game/fluorine"
 	"github.com/DrTeePot/game/fluorine/render"
 )
 
@@ -48,14 +47,44 @@ func main() {
 		- figure out how lights are handled
 		// TODO eventually make entites and lights using AddLight and AddEntity
 	*/
-	entities := []render.Renderable{{}}
-	lights := []render.Light{render.NewLight(
-		mgl32.Vec3{5, 5, -15},
-		mgl32.Vec3{1, 1, 1},
-	)}
 	camera := render.Camera{}
 
-	renderEngine := render.NewEngine(entities, lights, camera)
+	engine := render.NewEngine(
+		camera,
+		[][]render.Model{{render.Model{}}, {render.Model{}}},
+	)
+
+	somethingFloat := fluorine.NewFloatComponent(
+		"test",
+		1,
+		fluorine.FloatNoOp,
+	)
+	somethingString := fluorine.NewStringComponent(
+		"test",
+		1,
+		fluorine.StringNoOp,
+	)
+
+	arrayOfFloat := []fluorine.FloatComponent{
+		somethingFloat,
+	}
+
+	arrayOfString := []fluorine.StringComponent{
+		somethingString,
+	}
+
+	// TODO need a way to create array of components, or none
+	store := fluorine.CreateStore(arrayOfFloat, arrayOfString)
+
+	fluorine := fluorine.New(
+		window,
+		engine,
+		store,
+	)
+
+	// load shaders
+
+	// load entities, with shaders
 
 	/*
 		Terrain:
@@ -75,9 +104,9 @@ func main() {
 		- start render engine (runs in this thread, this has to happen
 		last)
 	*/
+	fluorine.Start()
 	// TODO this won't work properly right now since it will only
 	// render entities that were passed into NewEngine, since it's pass
 	// by value
-	renderEngine.Start(window)
 
 }
