@@ -6,6 +6,7 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 
 	"github.com/DrTeePot/game/fluorine/render"
+	"github.com/DrTeePot/game/fluorine/store"
 )
 
 type transformMatrix = mgl32.Mat4
@@ -13,18 +14,18 @@ type transformMatrix = mgl32.Mat4
 type fluorine struct {
 	window       *glfw.Window
 	renderEngine render.RenderEngine
-	store        store
+	store        store.Store
 }
 
 func New(
-	window *glfw.Window,
-	renderEngine render.RenderEngine,
-	store store,
+	w *glfw.Window,
+	r render.RenderEngine,
+	s store.Store,
 ) fluorine {
 	return fluorine{
-		window:       window,
-		renderEngine: renderEngine,
-		store:        store,
+		window:       w,
+		renderEngine: r,
+		store:        s,
 	}
 }
 
@@ -35,7 +36,7 @@ func (f fluorine) Start() {
 	// run a loop that just calls renderAll
 	for !f.window.ShouldClose() {
 		// update state according to dispatched actions
-		f.store.update()
+		f.store.Update()
 
 		// TODO transform data into a way that the render engine can process
 

@@ -9,12 +9,21 @@ import (
 
 type transformMatrix = mgl32.Mat4
 
+type Modeller interface {
+	Instantiate()
+	Render(
+		viewMatrix mgl32.Mat4,
+		lights []Light,
+		transforms []transformMatrix)
+}
+
 type Model struct {
-	id           uint32
-	shader       shaders.BasicShader
-	meshID       uint32
-	vertexCount  int32
-	textureID    uint32
+	name        string
+	shader      shaders.BasicShader // TODO this should be an id
+	meshID      uint32
+	vertexCount int32
+	textureID   uint32
+
 	shine        float32
 	reflectivity float32
 }
@@ -32,6 +41,25 @@ func (m Model) Render(
 	lights []Light,
 	transforms []transformMatrix,
 ) {
+	m.setupShader(viewMatrix, lights)
+
+	m.loadModelToGPU()
+
+	// draw using elements array
+	for _, transform := range transforms {
+		m.shader.LoadTransformationMatrix(transform)
+		gl.DrawElements(gl.TRIANGLES, m.vertexCount, gl.UNSIGNED_INT, nil)
+	}
+
+	m.cleanupModel()
+
+	m.stopShader()
+}
+
+func (m Model) setupShader(
+	viewMatrix mgl32.Mat4,
+	lights []Light,
+) {
 	// prepare shader
 	m.shader.Start()
 
@@ -41,7 +69,9 @@ func (m Model) Render(
 	m.shader.LoadViewMatrix(viewMatrix)
 
 	m.shader.LoadSpecular(m.shine, m.reflectivity)
+}
 
+func (m Model) loadModelToGPU() {
 	// bind our VAO and the buffers we're using
 	gl.BindVertexArray(m.meshID)
 	gl.EnableVertexAttribArray(0) // enable vertecies
@@ -51,19 +81,15 @@ func (m Model) Render(
 	// setup texture
 	gl.ActiveTexture(gl.TEXTURE0)
 	gl.BindTexture(gl.TEXTURE_2D, m.textureID)
+}
 
-	// draw the model
-	// draw using elements array
-	for _, transform := range transforms {
-		m.shader.LoadTransformationMatrix(transform)
-		gl.DrawElements(gl.TRIANGLES, m.vertexCount, gl.UNSIGNED_INT, nil)
-	}
-
-	// cleanup our VAO
+func (m Model) cleanupModel() {
 	gl.DisableVertexAttribArray(0) // disable vertecies
 	gl.DisableVertexAttribArray(1) // disable textures
 	gl.DisableVertexAttribArray(2) // disable normals
 	gl.BindVertexArray(0)          // unbind model VAO
+}
 
+func (m Model) stopShader() {
 	m.shader.Stop()
 }

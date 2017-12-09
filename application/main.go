@@ -4,7 +4,9 @@ import (
 	"runtime"
 
 	"github.com/DrTeePot/game/fluorine"
+	"github.com/DrTeePot/game/fluorine/components/transform"
 	"github.com/DrTeePot/game/fluorine/render"
+	"github.com/DrTeePot/game/fluorine/store"
 )
 
 const (
@@ -34,12 +36,6 @@ func main() {
 	*/
 
 	/*
-		Rules engine:
-		- create rules, probably in a yaml
-		- start engine
-	*/
-
-	/*
 		Render engine:
 		- Create new render engine
 		- load shaders to render engine
@@ -54,27 +50,28 @@ func main() {
 		[][]render.Model{{render.Model{}}, {render.Model{}}},
 	)
 
-	somethingFloat := fluorine.NewFloatComponent(
-		"test",
-		1,
-		fluorine.FloatNoOp,
-	)
-	somethingString := fluorine.NewStringComponent(
-		"test",
-		1,
-		fluorine.StringNoOp,
-	)
+	// load shaders
 
-	arrayOfFloat := []fluorine.FloatComponent{
-		somethingFloat,
-	}
+	// load models, using shaders
 
-	arrayOfString := []fluorine.StringComponent{
-		somethingString,
-	}
+	/*
+		fluorine:
+		- create reducers, likely in a different file
+		- create store with reducers
+		- generate top level engine object with store and sub-engines
+		- start
+	*/
+	somethingFloat := store.NewFloatReducer(1, store.FloatNoOp)
 
-	// TODO need a way to create array of components, or none
-	store := fluorine.CreateStore(arrayOfFloat, arrayOfString)
+	testCom := store.NewUniversalComponent_float32("test", somethingFloat)
+	transformCom := transform.CreateTransformComponent()
+
+	registeredComponents := store.NewRegistry([]store.UniversalComponent_float32{
+		testCom,
+		transformCom,
+	})
+
+	store := store.CreateStore(registeredComponents)
 
 	fluorine := fluorine.New(
 		window,
@@ -82,31 +79,10 @@ func main() {
 		store,
 	)
 
-	// load shaders
-
-	// load entities, with shaders
-
-	/*
-		Terrain:
-		- set parameters and generate
-	*/
-
-	/*
-		Core:
-		- create store
-		- start state machine
-		- generate top level entity with store
-		- start
-	*/
-
 	// **** MAIN LOOP **** //
 	/*
 		- start render engine (runs in this thread, this has to happen
 		last)
 	*/
 	fluorine.Start()
-	// TODO this won't work properly right now since it will only
-	// render entities that were passed into NewEngine, since it's pass
-	// by value
-
 }

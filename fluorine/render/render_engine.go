@@ -57,18 +57,14 @@ func (r RenderEngine) Update(entities [][]transformMatrix, lights []Light) {
 	for _, shader := range r.models {
 		for _, model := range shader {
 			viewMatrix := CreateViewMatrix(r.camera)
-			// TODO model.id might not work, more thought needed.
-			model.Render(viewMatrix, lights, entities[model.id])
+			// TODO this doesn't actually do anything
+			model.Render(viewMatrix, lights, entities[0])
 		}
 	}
 }
 
 // Called when we first create the render engine
 func initializeOpenGL(shader shaders.BasicShader) {
-	gl.Enable(gl.CULL_FACE)
-	gl.CullFace(gl.BACK)
-	gl.DepthFunc(gl.LESS)
-
 	projectionMatrix := createProjectionMatrix()
 
 	shader.Start()
@@ -91,8 +87,13 @@ func createProjectionMatrix() mgl32.Mat4 {
 	return matrix
 }
 
-// Gets run on each update?
 func prepare() {
+	// TODO this just needs to be enabled for shaders that use these features
+	gl.Enable(gl.CULL_FACE)
+	gl.CullFace(gl.BACK)
+	gl.DepthFunc(gl.LESS)
 	gl.Enable(gl.DEPTH_TEST)
+
+	// this needs to run each update
 	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 }
