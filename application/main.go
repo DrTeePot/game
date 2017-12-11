@@ -1,22 +1,15 @@
 package main
 
 import (
-	"fmt"
-	"log"
+	"path"
 	"runtime"
 
-	"./entity"
-
-	"github.com/DrTeePot/engine/display"
-	"github.com/DrTeePot/engine/input"
-	"github.com/DrTeePot/engine/light"
-	"github.com/DrTeePot/engine/maths"
-	"github.com/DrTeePot/engine/system/renderer"
-	"github.com/DrTeePot/game/components"
-
-	"github.com/go-gl/gl/v4.1-core/gl"
-	"github.com/go-gl/glfw/v3.2/glfw"
-	"github.com/go-gl/mathgl/mgl32"
+	"github.com/DrTeePot/game/fluorine"
+	"github.com/DrTeePot/game/fluorine/components/mesh"
+	"github.com/DrTeePot/game/fluorine/components/transform"
+	"github.com/DrTeePot/game/fluorine/render"
+	"github.com/DrTeePot/game/fluorine/render/shaders"
+	"github.com/DrTeePot/game/fluorine/store"
 )
 
 const (
@@ -31,78 +24,94 @@ func init() {
 	runtime.LockOSThread()
 }
 
-type Dragon struct {
-	// TODO not used because entity does this kinda?
-	Mesh      components.Mesh
-	Texture   components.Texture
-	Transform components.Transform3D
-}
-
-func NewDragon(mesh string, tex string, pos mgl32.Vec3, rot mgl32.Vec3) {
-	return entity.NewEntity("assets/dragon.obj", "assets.blank.png",
-		mgl32.Vec3{0, -5, -20}, mgl32.Vec3{0, 0, 0})
-}
-
 func main() {
-	window := display.New()
-	defer display.Exit()
+	window := render.NewWindow(windowWidth, windowHeight, "game")
+	// probably also do cleanup?
+	defer render.CloseWindow()
 
 	// **** SETUP **** //
-	// shaders
-	vertexShader := "shaders/vertexShader.glsl"
-	fragmentShader := "shaders/fragmentShader.glsl"
-	shader, err := renderer.NewBasicShader(vertexShader, fragmentShader)
+	_, mainFileLocation, _, ok := runtime.Caller(0)
+	if !ok {
+		panic("No caller information")
+	}
+	applicationDirectory := path.Dir(mainFileLocation)
+
+	/*
+		Input handler:
+		- create new input handler
+		- bind things to keys
+		- start engine
+	*/
+
+	camera := render.Camera{}
+
+	shader, err := shaders.NewBasicShader()
 	if err != nil {
 		panic(err)
 	}
-	renderSystem := renderer.NewRenderer(shader)
-	renderSystem.Init()
 
-	e := NewDragon("assets/dragon.obj", "assets/blank.png",
-		mgl32.Vec3{0, -5, -20}, mgl32.Vec3{0, 0, 0})
-
-	// camera
-	var camera entity.Camera // new 0'd camera
-
-	// light
-	coolLight := light.Create(
-		mgl32.Vec3{5, 5, -15},
-		mgl32.Vec3{1, 1, 1},
+	dragon, err := render.NewModel(
+		"dragon",
+		shader,
+		applicationDirectory+"/assets/dragon.obj",
+		applicationDirectory+"/assets/blank.png",
+		0.5,
+		0.5,
 	)
-
-	// unit axis
-	x := mgl32.Vec3{1, 0, 0}
-	y := mgl32.Vec3{0, 1, 0}
-	z := mgl32.Vec3{0, 0, 1}
-
-	// **** KEYBORD INPUT **** //
-	keyboard := input.NewKeyboardListener(window)
-	// TODO rename this binding function
-	keyboard.OnMovementKey(glfw.KeyW, camera.Move(z, -0.2), camera.Move(z, 0.2))
-	keyboard.OnMovementKey(glfw.KeyS, camera.Move(z, 0.2), camera.Move(z, -0.2))
-	keyboard.OnMovementKey(glfw.KeyD, camera.Move(x, 0.2), camera.Move(x, -0.2))
-	keyboard.OnMovementKey(glfw.KeyA, camera.Move(x, -0.2), camera.Move(x, 0.2))
-
-	// jump?
-	keyboard.OnMovementKey(glfw.KeyLeftShift, camera.Move(y, -0.2), camera.Move(y, 0.2))
-	keyboard.OnMovementKey(glfw.KeySpace, camera.Move(y, 0.2), camera.Move(y, -0.2))
-
-	// **** MAIN LOOP **** //
-	gl.ClearColor(0.11, 0.545, 0.765, 0.0) // set background colour
-	for !window.ShouldClose() {
-		// rotate our entity
-		e.RotateBy(mgl32.Vec3{0, 1, 0})
-		camera.Update() // movement
-
-		// **** RENDER LOOP **** //
-		renderSystem.Update(0) // eventually pass in real time between frames
-
-		// Maintenance
-		window.SwapBuffers()
-		glfw.PollEvents()
+	if err != nil {
+		panic(err)
 	}
 
-	// **** CLEANUP **** //
-	shader.Delete()
-	model.CleanUp()
+	models := []render.Model{
+		dragon, // 0
+	}
+
+	engine := render.NewEngine(
+		camera,
+		models,
+		shader,
+	)
+
+	/*
+		fluorine:
+		- create reducers, likely in a different file
+		- create store with reducers
+		- generate top level engine object with store and sub-engines
+		- start
+	*/
+	somethingFloat := store.NewFloatReducer(1, store.FloatNoOp)
+
+	testCom := store.NewUniversalComponent_float32("test", somethingFloat)
+	transformCom := transform.CreateTransformComponent()
+	meshCom := mesh.CreateComponent()
+
+	registeredComponents := store.NewRegistry([]store.UniversalComponent_float32{
+		testCom,
+		transformCom,
+		meshCom,
+	})
+
+	myStore := store.CreateStore(registeredComponents)
+
+	fluorine := fluorine.New(
+		window,
+		engine,
+		myStore,
+	)
+
+	entityID := uint32(0)
+	dragonMeshID := float32(0)
+	addDragonMesh := mesh.SetMesh(entityID, dragonMeshID)
+	moveDragonMesh := transform.SetPosition(entityID, 0, -5, -20)
+
+	// spawns goroutine
+	myStore.DispatchFloat(addDragonMesh)
+	myStore.DispatchFloat(moveDragonMesh)
+
+	// **** MAIN LOOP **** //
+	/*
+		- start render engine (runs in this thread, this has to happen
+		last)
+	*/
+	fluorine.Start()
 }
