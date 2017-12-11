@@ -69,8 +69,8 @@ func (f fluorine) Start() {
 
 		// TODO light component
 		lights := []render.Light{render.NewLight(
-			mgl32.Vec3{0, 0, 0},
-			mgl32.Vec3{0, 0, 0},
+			mgl32.Vec3{5, 5, -15},
+			mgl32.Vec3{1, 1, 1},
 		)}
 
 		// **** RENDER LOOP **** //
