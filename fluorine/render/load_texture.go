@@ -1,4 +1,4 @@
-package components
+package render
 
 import (
 	"fmt"
@@ -10,23 +10,9 @@ import (
 	"github.com/go-gl/gl/v4.1-core/gl"
 )
 
-type Texture struct {
-	File         string
-	Shine        float32
-	Reflectivity float32
-
-	loaded bool
-
-	// TODO should this data be here?
-	id uint32
-}
-
-// TODO if shine, id, reflect data is removed this doesn't need to be a pointer
 // LoadTexture loads a png file into a texture, returns the ID
-// fulfiles system.TextureLoader interface
-func (t *Texture) LoadTexture() (id uint32, err error) {
+func loadTexture(file string) (id uint32, err error) {
 	// Load the file
-	file := t.File
 	imgFile, err := os.Open(file)
 	if err != nil {
 		return 0, fmt.Errorf("texture %q not found on disk: %v", file, err)

@@ -25,23 +25,18 @@ We also need to remove VAO's from memory when things end?
 */
 type RenderEngine struct {
 	// this could be an array of renderer objects
-	models [][]Model // array of models by shader
+	models []Model
 	camera Camera
 	// TODO probably the display, or else those constants should be on camera
 }
 
 func NewEngine(
 	camera Camera,
-	models [][]Model, // TODO make this an actual type
+	models []Model,
+	shader shaders.BasicShader,
 ) RenderEngine {
-	// return an object that does the things
-	// has a shader
 
-	shader, err := shaders.NewBasicShader()
-	if err != nil {
-		panic(err)
-	}
-
+	// TODO user should get to specify shader and how it initalizes
 	initializeOpenGL(shader)
 
 	return RenderEngine{
@@ -51,15 +46,12 @@ func NewEngine(
 }
 
 // The bulk of the renderer
-func (r RenderEngine) Update(entities [][]transformMatrix, lights []Light) {
+func (r RenderEngine) Update(entities map[uint32][]transformMatrix, lights []Light) {
 	prepare()
-	// TODO this render loop needs to take into account [][][]TransformMatrix
-	for _, shader := range r.models {
-		for _, model := range shader {
-			viewMatrix := CreateViewMatrix(r.camera)
-			// TODO this doesn't actually do anything
-			model.Render(viewMatrix, lights, entities[0])
-		}
+	viewMatrix := CreateViewMatrix(r.camera)
+
+	for meshID, transforms := range entities {
+		r.models[meshID].Render(viewMatrix, lights, transforms)
 	}
 }
 

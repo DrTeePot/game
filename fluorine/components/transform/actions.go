@@ -6,7 +6,7 @@ import (
 
 func SetPosition(entity uint32, x, y, z float32) action.Action_float32 {
 	return action.Create_float32(
-		transformName,
+		TransformName,
 		setPosition,
 		entity,
 		[]float32{x, y, z},
@@ -15,7 +15,7 @@ func SetPosition(entity uint32, x, y, z float32) action.Action_float32 {
 
 func IncreasePosition(entity uint32, x, y, z float32) action.Action_float32 {
 	return action.Create_float32(
-		transformName,
+		TransformName,
 		increasePosition,
 		entity,
 		[]float32{x, y, z},

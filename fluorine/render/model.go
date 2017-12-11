@@ -9,7 +9,7 @@ import (
 
 type transformMatrix = mgl32.Mat4
 
-type Modeller interface {
+type modeller interface {
 	Instantiate()
 	Render(
 		viewMatrix mgl32.Mat4,
@@ -18,21 +18,45 @@ type Modeller interface {
 }
 
 type Model struct {
+	// TODO eventually store a reference to the shader we want to use for this
 	name        string
-	shader      shaders.BasicShader // TODO this should be an id
+	shader      shaders.BasicShader
 	meshID      uint32
 	vertexCount int32
-	textureID   uint32
 
+	// TODO these should all be their own components
+	textureID    uint32
 	shine        float32
 	reflectivity float32
 }
 
-// TODO NewModel
+func NewModel(
+	name string, // used in Model Library
+	shader shaders.BasicShader,
+	meshFile string,
+	textureFile string,
+	shine float32,
+	reflectivity float32,
+) (model Model, err error) {
 
-// Create a new entry in the transform array
-func (m Model) Instantiate() {
+	meshID, vertexCount, err := loadMeshFile(meshFile)
+	if err != nil {
+		return model, err
+	}
+	textureID, err := loadTexture(textureFile)
+	if err != nil {
+		return model, err
+	}
 
+	return Model{
+		name,
+		shader,
+		meshID,
+		vertexCount,
+		textureID,
+		shine,
+		reflectivity,
+	}, nil
 }
 
 // TODO somehow improve how we associate shaders and entities... maybe an int?

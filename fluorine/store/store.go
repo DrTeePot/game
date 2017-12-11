@@ -1,6 +1,8 @@
 package store
 
 import (
+	"fmt"
+
 	"github.com/DrTeePot/game/fluorine/action"
 )
 
@@ -37,6 +39,7 @@ func (s *Store) Update() {
 	// grab other component events
 	select {
 	case a := <-s.dispatchFloat:
+		fmt.Println("Recieved action for", a.Component())
 		id := a.Component()
 		component := s.registry.components[id]
 		component.update(a)
@@ -45,12 +48,16 @@ func (s *Store) Update() {
 	}
 }
 
+func (s Store) State(name string) map[uint32][]float32 {
+	return s.registry.Component(name)
+}
+
 func (s Store) DispatchFloat(action action.Action_float32) {
-	s.dispatchFloat <- action
+	go func() { s.dispatchFloat <- action }()
 }
 
 func (s Store) DispatchInput(action action.Action_float32) {
-	s.inputStream <- action
+	go func() { s.inputStream <- action }()
 }
 
 func (s Store) Close() {

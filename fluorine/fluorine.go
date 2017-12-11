@@ -5,6 +5,8 @@ import (
 	"github.com/go-gl/glfw/v3.2/glfw"
 	"github.com/go-gl/mathgl/mgl32"
 
+	"github.com/DrTeePot/game/fluorine/components/mesh"
+	"github.com/DrTeePot/game/fluorine/components/transform"
 	"github.com/DrTeePot/game/fluorine/render"
 	"github.com/DrTeePot/game/fluorine/store"
 )
@@ -38,21 +40,42 @@ func (f fluorine) Start() {
 		// update state according to dispatched actions
 		f.store.Update()
 
-		// TODO transform data into a way that the render engine can process
+		transformEntities := f.store.State(transform.TransformName)
+		meshEntities := f.store.State(mesh.MeshComponent)
 
-		// **** RENDER LOOP **** //
-		entities := [][]transformMatrix{
-			[]transformMatrix{
-				transformMatrix{0, 0, 0, 0},
-				transformMatrix{0, 0, 0, 0},
-			},
+		renderEntities := make(map[uint32][]transformMatrix)
+		for entityID, meshData := range meshEntities {
+			transformData, ok := transformEntities[entityID]
+			if !ok {
+				transformData = []float32{0, 0, 0, 0, 0, 0}
+			}
+			meshID := uint32(meshData[0])
+			currentEntities := renderEntities[meshID]
+
+			matrix := render.CreateTransformationMatrix(
+				mgl32.Vec3{
+					transformData[0], // position x
+					transformData[1], // position y
+					transformData[2], // position z
+				},
+				transformData[3], // rotation x
+				transformData[4], // rotation y
+				transformData[5], // rotation z
+				1,                //scale
+			)
+
+			renderEntities[meshID] = append(currentEntities, matrix)
 		}
+
+		// TODO light component
 		lights := []render.Light{render.NewLight(
 			mgl32.Vec3{0, 0, 0},
 			mgl32.Vec3{0, 0, 0},
 		)}
-		// eventually this will need to take into account time offsets
-		f.renderEngine.Update(entities, lights)
+
+		// **** RENDER LOOP **** //
+		// TODO eventually this will need to take into account time offsets
+		f.renderEngine.Update(renderEntities, lights)
 
 		// Show the things we drew on the buffer
 		f.window.SwapBuffers()

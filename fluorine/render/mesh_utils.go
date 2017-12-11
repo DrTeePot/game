@@ -1,4 +1,4 @@
-package components
+package render
 
 import (
 	"strconv"

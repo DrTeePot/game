@@ -1,11 +1,14 @@
 package main
 
 import (
+	"path"
 	"runtime"
 
 	"github.com/DrTeePot/game/fluorine"
+	"github.com/DrTeePot/game/fluorine/components/mesh"
 	"github.com/DrTeePot/game/fluorine/components/transform"
 	"github.com/DrTeePot/game/fluorine/render"
+	"github.com/DrTeePot/game/fluorine/render/shaders"
 	"github.com/DrTeePot/game/fluorine/store"
 )
 
@@ -27,6 +30,11 @@ func main() {
 	defer render.CloseWindow()
 
 	// **** SETUP **** //
+	_, mainFileLocation, _, ok := runtime.Caller(0)
+	if !ok {
+		panic("No caller information")
+	}
+	applicationDirectory := path.Dir(mainFileLocation)
 
 	/*
 		Input handler:
@@ -35,24 +43,34 @@ func main() {
 		- start engine
 	*/
 
-	/*
-		Render engine:
-		- Create new render engine
-		- load shaders to render engine
-		- load meshes and textures to render engine
-		- figure out how lights are handled
-		// TODO eventually make entites and lights using AddLight and AddEntity
-	*/
 	camera := render.Camera{}
+
+	shader, err := shaders.NewBasicShader()
+	if err != nil {
+		panic(err)
+	}
+
+	dragon, err := render.NewModel(
+		"dragon",
+		shader,
+		applicationDirectory+"/assets/dragon.obj",
+		applicationDirectory+"/assets/blank.png",
+		0.5,
+		0.5,
+	)
+	if err != nil {
+		panic(err)
+	}
+
+	models := []render.Model{
+		dragon, // 0
+	}
 
 	engine := render.NewEngine(
 		camera,
-		[][]render.Model{{render.Model{}}, {render.Model{}}},
+		models,
+		shader,
 	)
-
-	// load shaders
-
-	// load models, using shaders
 
 	/*
 		fluorine:
@@ -65,19 +83,30 @@ func main() {
 
 	testCom := store.NewUniversalComponent_float32("test", somethingFloat)
 	transformCom := transform.CreateTransformComponent()
+	meshCom := mesh.CreateComponent()
 
 	registeredComponents := store.NewRegistry([]store.UniversalComponent_float32{
 		testCom,
 		transformCom,
+		meshCom,
 	})
 
-	store := store.CreateStore(registeredComponents)
+	myStore := store.CreateStore(registeredComponents)
 
 	fluorine := fluorine.New(
 		window,
 		engine,
-		store,
+		myStore,
 	)
+
+	entityID := uint32(0)
+	dragonMeshID := float32(0)
+	addDragonMesh := mesh.SetMesh(entityID, dragonMeshID)
+	moveDragonMesh := transform.SetPosition(entityID, 0, -5, -20)
+
+	// spawns goroutine
+	myStore.DispatchFloat(addDragonMesh)
+	myStore.DispatchFloat(moveDragonMesh)
 
 	// **** MAIN LOOP **** //
 	/*

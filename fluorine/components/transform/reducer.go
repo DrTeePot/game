@@ -19,7 +19,8 @@ func reducerFunction(
 		y := a.Value()[1]
 		z := a.Value()[2]
 
-		newPosition := []float32{x, y, z}
+		// TODO make this accurately account for scale and rotation
+		newPosition := []float32{x, y, z, 0, 0, 0}
 
 		return s.Assign(a.Entity(), newPosition)
 
@@ -33,6 +34,9 @@ func reducerFunction(
 			x + data[0],
 			y + data[1],
 			z + data[2],
+			0,
+			0,
+			0,
 		}
 
 		return s.Assign(a.Entity(), newPosition)

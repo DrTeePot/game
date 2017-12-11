@@ -50,5 +50,8 @@ func (u UniversalComponent_float32) Close() {
 func (u *UniversalComponent_float32) update(a action.Action_float32) {
 	data := u.state
 	u.state = u.reducer.Run(data, a)
-	u.subscribe <- u.state
+	select {
+	case u.subscribe <- u.state:
+	default:
+	}
 }
