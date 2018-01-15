@@ -14,9 +14,10 @@ load data in a certain range of chunks
 */
 
 type UniversalComponent_float32 struct {
-	name      string
-	state     State_float32
-	reducer   FloatReducer
+	name    string
+	state   State_float32
+	reducer FloatReducer // TODO FloatReducer should probably just be a
+	// function  alias
 	subscribe chan State_float32
 }
 
@@ -32,6 +33,12 @@ func NewUniversalComponent_float32(
 		subscribe: make(chan State_float32),
 	}
 }
+
+func (u UniversalComponent_float32) State() map[uint32][]float32 {
+	return u.state.data
+}
+
+func (u UniversalComponent_float32) Name() string { return u.name }
 
 func (u UniversalComponent_float32) Subscribe(watcher func(State_float32)) {
 	outbound := u.subscribe

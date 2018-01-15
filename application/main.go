@@ -95,7 +95,15 @@ func main() {
 
 	fluorine := fluorine.New(
 		window,
-		engine,
+		[]store.System{
+			store.NewSystem(
+				[]string{
+					transformCom.Name(),
+					meshCom.Name(),
+				},
+				engine.Update,
+			),
+		},
 		myStore,
 	)
 

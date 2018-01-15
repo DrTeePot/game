@@ -6,7 +6,10 @@ import (
 	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/mathgl/mgl32"
 
+	"github.com/DrTeePot/game/fluorine/components/mesh"
+	"github.com/DrTeePot/game/fluorine/components/transform"
 	"github.com/DrTeePot/game/fluorine/render/shaders"
+	"github.com/DrTeePot/game/fluorine/store"
 )
 
 // TODO make a display class that handles the display
@@ -45,8 +48,50 @@ func NewEngine(
 	}
 }
 
+func (r RenderEngine) Update(s store.Store) {
+
+	// Update function
+	transformEntities := s.Component(transform.TransformName).State()
+	meshEntities := s.Component(mesh.MeshComponent).State()
+
+	renderEntities := make(map[uint32][]transformMatrix)
+	for entityID, meshData := range meshEntities {
+		transformData, ok := transformEntities[entityID]
+		if !ok {
+			transformData = []float32{0, 0, 0, 0, 0, 0}
+		}
+		meshID := uint32(meshData[0])
+		currentEntities := renderEntities[meshID]
+
+		matrix := CreateTransformationMatrix(
+			mgl32.Vec3{
+				transformData[0], // position x
+				transformData[1], // position y
+				transformData[2], // position z
+			},
+			transformData[3], // rotation x
+			transformData[4], // rotation y
+			transformData[5], // rotation z
+			1,                //scale
+		)
+
+		renderEntities[meshID] = append(currentEntities, matrix)
+	}
+
+	// TODO light component
+	lights := []Light{NewLight(
+		mgl32.Vec3{5, 5, -15},
+		mgl32.Vec3{1, 1, 1},
+	)}
+
+	// **** RENDER LOOP **** //
+	// TODO eventually this will need to take into account time offsets
+	r.render(renderEntities, lights)
+
+}
+
 // The bulk of the renderer
-func (r RenderEngine) Update(entities map[uint32][]transformMatrix, lights []Light) {
+func (r RenderEngine) render(entities map[uint32][]transformMatrix, lights []Light) {
 	prepare()
 	viewMatrix := CreateViewMatrix(r.camera)
 

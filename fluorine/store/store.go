@@ -48,7 +48,11 @@ func (s *Store) Update() {
 	}
 }
 
-func (s Store) State(name string) map[uint32][]float32 {
+func (s Store) RegisteredComponents() []string {
+	return s.registry.RegisteredNames()
+}
+
+func (s Store) Component(name string) UniversalComponent_float32 {
 	return s.registry.Component(name)
 }
 
