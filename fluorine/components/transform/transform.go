@@ -9,6 +9,7 @@ const (
 
 	setPosition = iota
 	increasePosition
+	increaseRotation
 )
 
 func CreateTransformComponent() store.UniversalComponent_float32 {

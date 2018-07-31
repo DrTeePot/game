@@ -7,8 +7,8 @@ import (
 )
 
 const (
-	vertexShader   = "./fluorine/render/shaders/vertexShader.glsl"
-	fragmentShader = "./fluorine/render/shaders/fragmentShader.glsl"
+	vertexShader   = "../fluorine/render/shaders/vertexShader.glsl"
+	fragmentShader = "../fluorine/render/shaders/fragmentShader.glsl"
 
 	transformationMatrix = "transformationMatrix"
 	projectionMatrix     = "projectionMatrix"

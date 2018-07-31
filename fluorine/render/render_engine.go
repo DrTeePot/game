@@ -2,8 +2,10 @@ package render
 
 import (
 	"math"
+	// "time"
 
 	"github.com/go-gl/gl/v4.1-core/gl"
+	"github.com/go-gl/glfw/v3.2/glfw"
 	"github.com/go-gl/mathgl/mgl32"
 
 	"github.com/DrTeePot/game/fluorine/components/mesh"
@@ -28,6 +30,7 @@ We also need to remove VAO's from memory when things end?
 */
 type RenderEngine struct {
 	// this could be an array of renderer objects
+	window *glfw.Window
 	models []Model
 	camera Camera
 	// TODO probably the display, or else those constants should be on camera
@@ -37,12 +40,15 @@ func NewEngine(
 	camera Camera,
 	models []Model,
 	shader shaders.BasicShader,
+	w *glfw.Window,
 ) RenderEngine {
 
 	// TODO user should get to specify shader and how it initalizes
 	initializeOpenGL(shader)
+	gl.ClearColor(0.11, 0.545, 0.765, 0.0) // set background colour
 
 	return RenderEngine{
+		window: w,
 		camera: camera,
 		models: models,
 	}
@@ -88,6 +94,7 @@ func (r RenderEngine) Update(s store.Store) {
 	// TODO eventually this will need to take into account time offsets
 	r.render(renderEntities, lights)
 
+	r.window.SwapBuffers()
 }
 
 // The bulk of the renderer

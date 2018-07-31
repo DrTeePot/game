@@ -41,6 +41,23 @@ func reducerFunction(
 
 		return s.Assign(a.Entity(), newPosition)
 
+	case increaseRotation:
+		x := a.Value()[0]
+		y := a.Value()[1]
+		z := a.Value()[2]
+		data := s.GetEntity(a.Entity())
+
+		newTransform := []float32{
+			data[0],
+			data[1],
+			data[2],
+			x + data[3],
+			y + data[4],
+			z + data[5],
+		}
+
+		return s.Assign(a.Entity(), newTransform)
+
 	default:
 		return s
 	}

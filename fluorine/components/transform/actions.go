@@ -21,3 +21,12 @@ func IncreasePosition(entity uint32, x, y, z float32) action.Action_float32 {
 		[]float32{x, y, z},
 	)
 }
+
+func IncreaseRotation(entity uint32, x, y, z float32) action.Action_float32 {
+	return action.Create_float32(
+		TransformName,
+		increaseRotation,
+		entity,
+		[]float32{x, y, z},
+	)
+}

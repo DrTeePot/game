@@ -25,7 +25,7 @@ func init() {
 }
 
 func main() {
-	window := render.NewWindow(windowWidth, windowHeight, "game")
+	window := render.NewWindow(windowWidth, windowHeight, "Fluorine")
 	// probably also do cleanup?
 	defer render.CloseWindow()
 
@@ -70,6 +70,7 @@ func main() {
 		camera,
 		models,
 		shader,
+		window,
 	)
 
 	/*
@@ -94,7 +95,6 @@ func main() {
 	myStore := store.CreateStore(registeredComponents)
 
 	fluorine := fluorine.New(
-		window,
 		[]store.System{
 			store.NewSystem(
 				[]string{
@@ -107,14 +107,19 @@ func main() {
 		myStore,
 	)
 
+	// Hard coded ID's for the mesh and entity I added
 	entityID := uint32(0)
 	dragonMeshID := float32(0)
+
+	// Actions, which get dispatched into the store
 	addDragonMesh := mesh.SetMesh(entityID, dragonMeshID)
 	moveDragonMesh := transform.SetPosition(entityID, 0, -5, -20)
+	rotateAction := transform.IncreaseRotation(entityID, 1, 0, 0)
 
 	// spawns goroutine
 	myStore.DispatchFloat(addDragonMesh)
 	myStore.DispatchFloat(moveDragonMesh)
+	myStore.DispatchFloat(rotateAction)
 
 	// **** MAIN LOOP **** //
 	/*
@@ -122,4 +127,16 @@ func main() {
 		last)
 	*/
 	fluorine.Start()
+
+	for !window.ShouldClose() {
+		// TODO this is where systems that need to run in main thread should
+		// happen, other systems can be started in goroutines
+		// Should call 'Update' on each system
+		// the thing added to the store should just be a buffered channel
+		// that will send the store to the relevent update function
+
+		continue
+	}
+
+	fluorine.Done()
 }

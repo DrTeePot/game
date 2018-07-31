@@ -3,42 +3,57 @@ package fluorine
 import (
 	"time"
 
-	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/glfw/v3.2/glfw"
-	"github.com/go-gl/mathgl/mgl32"
 
 	"github.com/DrTeePot/game/fluorine/store"
 )
 
-type transformMatrix = mgl32.Mat4
-type empty struct{} // uses 0 space
+// type nothing = struct{} // uses 0 space
 
 /*
-TODO fluorine is an event loop, needs to have a list of
-systems to run that fulfil some update interface.
+TODO Fluorine
 
-systems will have dependencies on certain components.
+There are too many structures here, components can be added to fluorine
+directly. Current steps:
 
-namespace components using component name, check if requisite
-component exists on init.
+1. create compnents
+2. create systems
+3. create registry with components
+4. create store with registry
+5. create fluorine with system and store
+
+Recognizing that we need to add systems and components to fluorine, it may
+make sense to keep the registry. However, the store should be merged into
+fluorine.
+
+1. create components
+2. create system
+3. create registry with components
+4. create fluorine wiht system and registry
+
+Ideally we cut out the registry step as well.
+
 */
 
+const (
+	SLEEP_TIME = 1
+)
+
 type fluorine struct {
-	window     *glfw.Window
 	systems    []store.System
 	store      store.Store
 	renderTick *time.Ticker
+	close      chan (struct{})
 }
 
 func New(
-	w *glfw.Window,
 	y []store.System,
 	s store.Store,
 ) fluorine {
-	dependencies := make(map[string]empty)
+	dependencies := make(map[string]struct{})
 
 	for _, componentName := range s.RegisteredComponents() {
-		dependencies[componentName] = empty{}
+		dependencies[componentName] = struct{}{}
 	}
 
 	for _, system := range y {
@@ -51,7 +66,6 @@ func New(
 	}
 
 	return fluorine{
-		window:     w,
 		systems:    y,
 		store:      s,
 		renderTick: time.NewTicker(time.Duration(time.Second / 60)),
@@ -59,33 +73,34 @@ func New(
 }
 
 func (f fluorine) Start() {
-	// setup OpenGL
-	gl.ClearColor(0.11, 0.545, 0.765, 0.0) // set background colour
-
-	// run a loop that just calls renderAll
-	for !f.window.ShouldClose() {
+	for true {
 		// update state according to dispatched actions
 		f.store.Update()
 
-		select {
-		case <-f.renderTick.C:
-			for _, system := range f.systems {
-				// TODO this takes parameters
-				system.Update(f.store)
-			}
-
-			// TODO window, input adn swapping buffer
-			//   should not be here
-			// Show the things we drew on the buffer
-			f.window.SwapBuffers()
-		default:
+		// TODO this loop should not call systems. Systems should be spun up
+		// in their own threads, and this should just pass the new store
+		// to them
+		for _, system := range f.systems {
+			system.Update(f.store)
 		}
 
 		// grab input events
+		// TODO should be part of an input system
 		glfw.PollEvents()
+
+		select {
+		// Exit
+		case <-f.close:
+			break
+		default:
+			time.Sleep(SLEEP_TIME)
+		}
 	}
 
 	// **** CLEANUP **** //
 	f.store.Close()
-	// TODO delete all the stuff from openGL
+}
+
+func (f fluorine) Done() {
+	f.close <- struct{}{}
 }
